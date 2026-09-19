@@ -2,7 +2,7 @@
 
 [![Deploy to GitHub Pages](https://github.com/pandakingpunc/supernova-simulation/actions/workflows/deploy.yml/badge.svg)](https://github.com/pandakingpunc/supernova-simulation/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22844442.svg)](https://doi.org/10.5281/zenodo.22844442)
 
 **Live demo:** <https://pandakingpunc.github.io/supernova-simulation/>
 
@@ -185,13 +185,13 @@ Zenodo. GitHub also offers a *Cite this repository* button that reads [`CITATION
   version   = {1.0.0},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.XXXXXXX},
+  doi       = {10.5281/zenodo.22844442},
   url       = {https://github.com/pandakingpunc/supernova-simulation}
 }
 ```
 
-Replace `10.5281/zenodo.XXXXXXX` with the concept DOI issued by Zenodo after the first release.
-Release notes are kept in [`CHANGELOG.md`](CHANGELOG.md); Zenodo metadata is in
+The concept DOI 10.5281/zenodo.22844442 always resolves to the latest version; version 1.0.0 is
+10.5281/zenodo.22844443. Release notes are kept in [`CHANGELOG.md`](CHANGELOG.md); Zenodo metadata is in
 [`.zenodo.json`](.zenodo.json).
 
 ## Acknowledgements

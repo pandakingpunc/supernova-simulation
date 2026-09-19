@@ -21,6 +21,14 @@ authors:
 version: 1.0.0
 date-released: "2026-09-19"
 license: MIT
+doi: 10.5281/zenodo.22844443
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22844442
+    description: "Concept DOI: always resolves to the latest version"
+  - type: doi
+    value: 10.5281/zenodo.22844443
+    description: "Version 1.0.0"
 repository-code: "https://github.com/pandakingpunc/supernova-simulation"
 url: "https://pandakingpunc.github.io/supernova-simulation/"
 keywords:
