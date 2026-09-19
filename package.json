@@ -1,0 +1,30 @@
+{
+  "name": "supernova-simulation",
+  "version": "1.0.0",
+  "description": "Interactive, physically-motivated supernova simulation for the browser: stellar evolution, core collapse, ejecta, remnants and an Earth-view observer with light-travel time.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check:physics": "node scripts/check-physics.mjs"
+  },
+  "keywords": ["supernova", "astronomy", "simulation", "three.js", "webgl", "stellar-evolution"],
+  "license": "MIT",
+  "author": "Mustafa Karatum (https://github.com/pandakingpunc)",
+  "homepage": "https://pandakingpunc.github.io/supernova-simulation/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pandakingpunc/supernova-simulation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pandakingpunc/supernova-simulation/issues"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

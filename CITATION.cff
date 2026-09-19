@@ -1,0 +1,125 @@
+# Citation metadata for GitHub ("Cite this repository") and Zenodo.
+# Validate at: https://citation-file-format.github.io/cff-initializer-javascript/
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "Supernova Simulation"
+abstract: >-
+  An interactive, physically-motivated simulation of how stars die, running entirely
+  in the browser. Users pick a real star or build their own, fast-forward its
+  evolution, watch the core collapse and the ejecta expand in a WebGL scene at true
+  relative scale, and then observe the explosion from Earth, including light travel
+  time, apparent magnitude and order-of-magnitude environmental effects. All values
+  are labelled as Observed, Estimated or Simulation. Intended for education and
+  outreach, not as a hydrodynamics code.
+authors:
+  - given-names: Mustafa
+    family-names: Karatum
+    email: mustafakaratum6@gmail.com
+    alias: pandakingpunc
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+version: 1.0.0
+date-released: "2026-09-19"
+license: MIT
+repository-code: "https://github.com/pandakingpunc/supernova-simulation"
+url: "https://pandakingpunc.github.io/supernova-simulation/"
+keywords:
+  - supernova
+  - stellar evolution
+  - core collapse
+  - astronomy
+  - astrophysics
+  - education
+  - outreach
+  - simulation
+  - visualization
+  - WebGL
+  - three.js
+  - JavaScript
+references:
+  - type: article
+    title: "Analytical approximations for the early light curves of Type II-P supernovae"
+    authors:
+      - family-names: Popov
+        given-names: D. V.
+    journal: "The Astrophysical Journal"
+    volume: 414
+    start: 712
+    year: 1993
+    doi: 10.1086/173117
+  - type: article
+    title: "The properties of the radioactive decay of 56Ni and 56Co and the light curves of supernovae"
+    authors:
+      - family-names: Nadyozhin
+        given-names: D. K.
+    journal: "The Astrophysical Journal Supplement Series"
+    volume: 92
+    start: 527
+    year: 1994
+    doi: 10.1086/192008
+  - type: article
+    title: "Ozone depletion from nearby supernovae"
+    authors:
+      - family-names: Gehrels
+        given-names: Neil
+      - family-names: Laird
+        given-names: Claude M.
+      - family-names: Jackman
+        given-names: Charles H.
+      - family-names: Cannizzo
+        given-names: John K.
+      - family-names: Mattson
+        given-names: Barbara J.
+      - family-names: Chen
+        given-names: Wan
+    journal: "The Astrophysical Journal"
+    volume: 585
+    start: 1169
+    year: 2003
+    doi: 10.1086/346127
+  - type: article
+    title: "Supernova triggers for end-Devonian extinctions"
+    authors:
+      - family-names: Fields
+        given-names: Brian D.
+      - family-names: Melott
+        given-names: Adrian L.
+      - family-names: Ellis
+        given-names: John
+      - family-names: Ertel
+        given-names: Adrienne F.
+      - family-names: Fry
+        given-names: Brian J.
+      - family-names: Lieberman
+        given-names: Bruce S.
+      - family-names: Liu
+        given-names: Zhenghai
+      - family-names: Miller
+        given-names: Jesse A.
+      - family-names: Thomas
+        given-names: Brian C.
+    journal: "Proceedings of the National Academy of Sciences"
+    volume: 117
+    start: 21008
+    year: 2020
+    doi: 10.1073/pnas.2013774117
+  - type: article
+    title: "The initial-final mass relation: direct constraints at the low-mass end"
+    authors:
+      - family-names: Kalirai
+        given-names: Jasonjot S.
+      - family-names: Hansen
+        given-names: Brad M. S.
+      - family-names: Kelson
+        given-names: Daniel D.
+      - family-names: Reitzel
+        given-names: David B.
+      - family-names: Rich
+        given-names: R. Michael
+      - family-names: Richer
+        given-names: Harvey B.
+    journal: "The Astrophysical Journal"
+    volume: 676
+    start: 594
+    year: 2008
+    doi: 10.1086/527028

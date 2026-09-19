@@ -1,0 +1,73 @@
+{
+  "title": "Supernova Simulation: an interactive browser-based model of stellar death, from core collapse to the view from Earth",
+  "upload_type": "software",
+  "description": "<p>An interactive, physically-motivated simulation of how stars die, running entirely in the browser. Users pick a real star (Betelgeuse, Antares, Rigel, Spica, VY Canis Majoris, Eta Carinae, Sirius A, Vega, the Sun, Proxima Centauri) or build their own, fast-forward its evolution, watch the core collapse and the ejecta expand in a WebGL scene at true relative scale, and then step outside to see what the explosion looks like from Earth, including the light travel time, the apparent magnitude on a panoramic night sky, and order-of-magnitude estimates of ozone depletion, UV-B increase, cosmic-ray flux and neutrino dose.</p><p>The supernova model is analytic: core collapse, bounce, shock breakout, a Popov (1993) plateau, a radioactive <sup>56</sup>Ni/<sup>56</sup>Co tail (Nadyozhin 1994), free expansion and a Sedov&ndash;Taylor phase. Remnants (white dwarf, neutron star, pulsar, magnetar, black hole, or none) follow simplified literature prescriptions. Every value in the interface is labelled <em>Observed</em>, <em>Estimated</em> or <em>Simulation</em>. The software is intended for education and outreach; it is not a hydrodynamics code and makes no predictions about when any real star will explode.</p><p>Built with Three.js and Vite. No backend, textures, datasets or API keys are required; the built site is under 1 MB.</p>",
+  "creators": [
+    {
+      "name": "Karatum, Mustafa"
+    }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "language": "eng",
+  "version": "1.0.0",
+  "keywords": [
+    "supernova",
+    "stellar evolution",
+    "core collapse",
+    "astronomy",
+    "astrophysics",
+    "education",
+    "outreach",
+    "simulation",
+    "visualization",
+    "WebGL",
+    "three.js",
+    "JavaScript"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/pandakingpunc/supernova-simulation",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://pandakingpunc.github.io/supernova-simulation/",
+      "relation": "isIdenticalTo",
+      "resource_type": "software",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.1086/173117",
+      "relation": "cites",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.1086/192008",
+      "relation": "cites",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.1086/346127",
+      "relation": "cites",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.1073/pnas.2013774117",
+      "relation": "cites",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.1086/527028",
+      "relation": "cites",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    }
+  ],
+  "notes": "Educational model. All numerical outputs are approximations; see the README sections 'Simulation limitations' and 'Scientific approximations'."
+}
