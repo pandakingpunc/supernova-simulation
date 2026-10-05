@@ -118,14 +118,16 @@ export class Simulation {
    */
   triggerSupernova({ forced = false } = {}) {
     if (!this.star || this.phase === 'supernova') return null;
-    const scenario = determineScenario(this.star, forced);
+    // After evolution ended only the remnant is left to explode, not the initial-mass progenitor.
+    const progenitor = this.phase === 'ended' && this.remnant ? { ...this.star, mass: this.remnant.mass } : this.star;
+    const scenario = determineScenario(progenitor, forced);
     if (!scenario) return null;
     const lastIdx = this.track.stages.length - 1;
     const collapseState = this.isCollapseTerminal()
       ? stateAtStage(this.track, lastIdx, 1)
       : this.currentEvolutionState();
     this.collapseState = collapseState;
-    this.model = buildSupernovaModel(this.star, collapseState, scenario);
+    this.model = buildSupernovaModel(progenitor, collapseState, scenario);
     this.forced = !this.model.params.natural;
     this.phase = 'supernova';
     this.tExp = T_EXP_START;
