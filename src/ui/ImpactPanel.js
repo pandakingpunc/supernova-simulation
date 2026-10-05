@@ -8,7 +8,7 @@ import { h, dataRow, chip, setChildren } from './dom.js';
 import { assessImpact, apparentMagnitudes, brightnessComparison, illuminanceLux } from '../physics/earthEffects.js';
 import { buildSupernovaModel, determineScenario } from '../physics/supernovaModel.js';
 import { buildEvolutionTrack, stateAtStage } from '../physics/evolution.js';
-import { sci, fmtDistanceLy, fmtYears, fmtDuration, fmtVelocity } from '../core/units.js';
+import { sci, fmtDistanceLy, fmtDuration, fmtVelocity } from '../core/units.js';
 import { MAG_FULL_MOON, MAG_SUN, YEAR_S } from '../core/constants.js';
 import { clamp } from '../core/math.js';
 
@@ -60,7 +60,7 @@ export function createImpactPanel(ctx) {
       bar(impact.ozoneDepletion, '#ffb454'),
       dataRow('UV-B increase', `+${(impact.uvbIncrease * 100).toFixed(impact.uvbIncrease < 0.01 ? 3 : 1)} %`, 'Estimated'),
       dataRow('Cosmic-ray flux (after shell arrival)', `${sci(impact.cosmicRayFactor, 1)}× today`, 'Estimated'),
-      dataRow('Shell arrival at Earth', fmtYears(impact.ejectaArrivalYr), 'Estimated'),
+      dataRow('Shell arrival at Earth', fmtDuration(impact.ejectaArrivalYr * YEAR_S), 'Estimated'),
       p.hasCollapse ? dataRow('Neutrino dose at Earth', `${sci(impact.neutrinoDoseSv)} Sv`, 'Estimated') : null,
       h('p', { class: 'note' }, 'Order-of-magnitude scalings anchored to published estimates (Gehrels et al. 2003; Fields et al. 2020). Real outcomes depend on the explosion\'s gamma-ray yield, the local interstellar medium and the state of the atmosphere. Educational, not predictive.'),
     );
