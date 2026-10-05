@@ -3,7 +3,7 @@
  * banner), scale bar, FPS and the Earth View status block.
  */
 import { h, button, setChildren } from './dom.js';
-import { fmtLengthMeters, fmtDuration, fmtYears, sci } from '../core/units.js';
+import { fmtLengthMeters, fmtDuration, fmtYears, fmtDistanceLy, sci } from '../core/units.js';
 import { CAMERA_PRESETS } from '../render/CameraRig.js';
 import { YEAR_S } from '../core/constants.js';
 
@@ -12,6 +12,10 @@ export function createOverlay(ctx) {
   const camInfo = h('div', { class: 'cam-info' });
   const forcedBanner = h('div', { class: 'forced-banner', style: { display: 'none' } }, 'Experimental scenario — not an astronomical prediction');
   const lightBanner = h('div', { class: 'light-banner', style: { display: 'none' } });
+  // persistent children: rebuilding the button every tick would swallow clicks and drop focus
+  const lightText = document.createTextNode('');
+  const jumpBtn = button('Jump to light arrival', () => actions.jumpToLightArrival(), 'small primary');
+  lightBanner.append(lightText, jumpBtn);
   const hud = h('div', { class: 'hud' }, camInfo, h('div', { style: { display: 'flex', gap: '8px', flexDirection: 'column', alignItems: 'flex-end' } }, forcedBanner, lightBanner));
   const scaleLabel = h('span');
   const scaleBar = h('div', { class: 'scale-bar' }, h('i'), scaleLabel);
@@ -54,10 +58,7 @@ export function createOverlay(ctx) {
       setChildren(earthStatus, ...lines);
       // light-travel banner
       if (snap.phase === 'supernova' && store.state.respectLightTravel && earthSnap && earthSnap.lightArrived === false) {
-        setChildren(lightBanner, 
-          `Light from the explosion has not reached Earth yet (${fmtYears(snap.star.distanceLy)} away). `,
-          button('Jump to light arrival', () => actions.jumpToLightArrival(), 'small primary'),
-        );
+        lightText.nodeValue = `Light from the explosion has not reached Earth yet (${fmtDistanceLy(snap.star.distanceLy)} away). `;
         lightBanner.style.display = '';
       } else lightBanner.style.display = 'none';
     } else {

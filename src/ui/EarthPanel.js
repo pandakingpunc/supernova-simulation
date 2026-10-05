@@ -19,7 +19,11 @@ export function createEarthPanel(ctx) {
   const lookBtn = button('Look at star', () => earth.lookAtStar());
   const riseBtn = button('Jump to star rise', () => { if (!earth.jumpToStarRise()) actions.toast('The star never rises above the horizon at this latitude.', 'warn'); });
 
-  const lightBox = h('div', {});
+  // rows/note are rebuilt each tick; the jump button is persistent so clicks and focus survive
+  const rowsBox = h('div', {});
+  const noteBox = h('div', {});
+  const jumpRow = h('div', { class: 'btn-row', style: { display: 'none' } }, button('Jump to light arrival', () => actions.jumpToLightArrival(), 'primary'));
+  const lightBox = h('div', {}, rowsBox, noteBox, jumpRow);
   const el = h('div', {},
     h('h3', { class: 'section-title' }, 'Observer'),
     latS, dayS, hourS, fovS,
@@ -42,15 +46,17 @@ export function createEarthPanel(ctx) {
       const arrived = !respect || snap.tExp >= delay * YEAR_S;
       rows.push(dataRow('Event occurred', fmtDuration(snap.tExp) + ' ago (star frame)', 'Simulation'));
       rows.push(dataRow('Light reaches Earth', arrived ? 'now visible' : `in ${fmtDuration(delay * YEAR_S - snap.tExp)}`, 'Simulation'));
-      setChildren(lightBox, 
-        ...rows,
+      setChildren(rowsBox, ...rows);
+      setChildren(noteBox,
         h('p', { class: `note ${arrived ? 'ok' : 'warn'}` }, arrived
           ? (respect ? `Earth is seeing light that left the star ${fmtDuration(delay * YEAR_S)} ago. Near the star, the remnant is already that old.` : 'Light-travel delay is ignored: Earth sees the explosion instantly (not physical).')
           : `The explosion has happened, but its light is still ${fmtDuration(delay * YEAR_S - snap.tExp)} away. Earth still sees the old star.`),
-        !arrived ? h('div', { class: 'btn-row' }, button('Jump to light arrival', () => actions.jumpToLightArrival(), 'primary')) : null,
       );
+      jumpRow.style.display = arrived ? 'none' : '';
     } else {
-      setChildren(lightBox, ...rows, h('p', { class: 'note' }, `Whatever happens to ${star.name} now, Earth would only learn about it ${fmtDuration(delay * YEAR_S)} later.`));
+      setChildren(rowsBox, ...rows);
+      setChildren(noteBox, h('p', { class: 'note' }, `Whatever happens to ${star.name} now, Earth would only learn about it ${fmtDuration(delay * YEAR_S)} later.`));
+      jumpRow.style.display = 'none';
     }
   }
 
