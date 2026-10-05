@@ -67,8 +67,8 @@ export function spectralType(T) {
 /** MK luminosity class from how inflated the star is relative to its ZAMS radius. */
 export function luminosityClass(M, R, L) {
   const ratio = R / mainSequenceRadius(M);
-  if (L > 3e5 && ratio > 3) return 'Ia+';
-  if (ratio > 25) return L > 3e4 ? 'Ia' : 'Iab';
+  if (M > 8 && L > 3e5 && ratio > 3) return 'Ia+';
+  if (ratio > 25) return M > 8 ? (L > 3e4 ? 'Ia' : 'Iab') : 'III'; // low-mass AGB/RGB giants are never supergiants
   if (ratio > 8) return M > 8 ? 'Ib' : 'III';
   if (ratio > 2.2) return 'IV';
   if (ratio < 0.02) return 'D'; // degenerate
