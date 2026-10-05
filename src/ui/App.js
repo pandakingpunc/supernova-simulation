@@ -36,7 +36,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
   const store = createStore({
     view: 'close',
     cameraPreset: 'orbit',
-    quality: Object.hasOwn(QUALITY_PRESETS, settings.quality) ? settings.quality : DEFAULT_QUALITY,
+    quality: Object.prototype.hasOwnProperty.call(QUALITY_PRESETS, settings.quality) ? settings.quality : DEFAULT_QUALITY,
     qualityLocked: !!settings.qualityLocked,
     respectLightTravel: settings.respectLightTravel ?? true,
     activeStarId: null,
@@ -99,7 +99,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
       scene.setCameraPreset(name, sim.snapshot());
     },
     setQuality(name, locked = false) {
-      if (!Object.hasOwn(QUALITY_PRESETS, name)) return;
+      if (!Object.prototype.hasOwnProperty.call(QUALITY_PRESETS, name)) return;
       scene.setQuality(name);
       store.set({ quality: name, qualityLocked: locked || store.state.qualityLocked });
       persist();
