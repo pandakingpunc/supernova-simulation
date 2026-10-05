@@ -72,9 +72,9 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     triggerSupernova(forced) {
       if (sim.phase === 'supernova') return;
       const scenario = sim.triggerSupernova({ forced });
-      if (!scenario) { if (!forced) toast('This star cannot explode naturally. Use "Trigger Experimental Supernova".', 'warn'); return; }
+      if (!scenario) { if (!forced) toast('This star cannot explode naturally. Use "Trigger Experimental Supernova".', { kind: 'warn' }); return; }
       const label = sim.model.params.label;
-      toast(sim.forced ? `Experimental scenario: ${label}. Not an astronomical prediction.` : `${label} — core collapse begins.`, sim.forced ? 'warn' : 'info');
+      toast(sim.forced ? `Experimental scenario: ${label}. Not an astronomical prediction.` : `${label} — core collapse begins.`, { kind: sim.forced ? 'warn' : 'info' });
       if (store.state.view === 'compare') actions.setView('close');
     },
     resetStar() {
