@@ -190,6 +190,8 @@ export function luminosityAt(p, t) {
   L += decayPower(p.MNi * SOLAR_MASS_KG, te) * diffusion * trapping;
   // 4) pulsar wind nebula / compact object at very late times
   L += p.pulsarLum / Math.pow(1 + te / (1000 * YEAR_S), 2);
+  // 5) the progenitor's own light fades into the flash rather than vanishing at breakout
+  L += p.Lstar * Math.exp(-te / p.tBoDur);
   return Math.max(L, 1e20);
 }
 
@@ -321,7 +323,8 @@ function stateAt(model, t) {
     // Colour temperature: hot flash cooling toward the hydrogen-recombination temperature
     const Tcool = p.TBreakout * Math.pow(Math.max(te, p.tBoDur) / p.tBoDur, -0.5);
     const Tfloor = 5200 - (5200 - 3500) * smoothstep(tRecede, tRecede * 1.5, te); // recombination floor relaxes after the plateau
-    s.Tcolor = clamp(Tcool, Tfloor, p.TBreakout);
+    const Tflash = clamp(Tcool, Tfloor, p.TBreakout);
+    s.Tcolor = p.Tstar + (Tflash - p.Tstar) * smoothstep(0, p.tBoDur * 0.35, te); // heats up from the surface temperature as the flash rises
   } else {
     s.Tcolor = p.Tstar;
   }
