@@ -48,7 +48,7 @@ export function createImpactPanel(ctx) {
       dataRow('vs. Sun', `${sci(cmp.vsSun, 1)}×`, 'Estimated'),
       h('div', { class: 'note' }, 'Brightness scale (naked-eye limit → Sun):'),
       bar(magPos, 'linear-gradient(90deg,#7cc7ff,#ffb454,#fff)'),
-      h('p', { class: 'note' }, cmp.label + (cmp.visibleDaytime ? ' Visible in daylight.' : '') + (cmp.castsShadows ? ' Bright enough to cast shadows.' : '')),
+      h('p', { class: 'note' }, cmp.label.replace(/[.!]?$/, '.') + (cmp.visibleDaytime && !/daylight/.test(cmp.label) ? ' Visible in daylight.' : '') + (cmp.castsShadows ? ' Bright enough to cast shadows.' : '')),
       dataRow('Light travel time', fmtDuration(star.distanceLy * YEAR_S), 'Observed'),
       dataRow('Bright phase lasts', p.LPlateau > 0 ? `~${fmtDuration(p.tPlateau)} plateau` : `~${fmtDuration(p.tDiff * 4)} around peak`, 'Estimated'),
 
