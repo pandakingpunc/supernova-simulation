@@ -9,7 +9,7 @@
  * follow from that one number, which keeps the scene physically coherent.
  */
 import { BRIGHT_STARS, CATALOG_TO_BRIGHT } from '../data/brightStars.js';
-import { sunRaDec, localSiderealTime, altAz, moonApprox, nextRise, hourLabel, dateLabel, dayOfYear } from '../physics/skyMath.js';
+import { sunRaDec, localSiderealTime, altAz, moonApprox, nextRise, hourLabel, dateLabel, dayOfYear, daysInYear } from '../physics/skyMath.js';
 import { apparentMagnitudes, illuminanceLux, brightnessComparison } from '../physics/earthEffects.js';
 import { blackbodyRGB } from '../physics/blackbody.js';
 import { makeRng, clamp, lerp, smoothstep, DEG } from '../core/math.js';
@@ -67,6 +67,7 @@ export class EarthView {
     this.ctx = canvas.getContext('2d');
     this.state = {
       latitude: 41,
+      year: new Date().getFullYear(),
       dayOfYear: dayOfYear(),
       hour: 22,
       autoAdvance: false,
@@ -123,7 +124,7 @@ export class EarthView {
   jumpToStarRise() {
     const r = this.info.riseHour;
     if (r == null) return false;
-    if (r < this.state.hour) this.state.dayOfYear = (this.state.dayOfYear % 365) + 1;
+    if (r < this.state.hour) this.state.dayOfYear = (this.state.dayOfYear % daysInYear(this.state.year)) + 1;
     this.state.hour = r;
     return true;
   }
@@ -142,15 +143,16 @@ export class EarthView {
     const H = this.height;
     if (s.autoAdvance) {
       s.hour += dt * s.hoursPerSecond;
-      if (s.hour >= 24) { s.hour -= 24; s.dayOfYear = (s.dayOfYear % 365) + 1; }
+      if (s.hour >= 24) { s.hour -= 24; s.dayOfYear = (s.dayOfYear % daysInYear(s.year)) + 1; }
     }
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     // --- positions ---
     const lst = localSiderealTime(s.dayOfYear, s.hour);
-    const sunEq = sunRaDec(s.dayOfYear);
+    const tDay = s.dayOfYear + (s.hour - 12) / 24; // fractional day so the Sun and Moon move continuously
+    const sunEq = sunRaDec(tDay);
     const sun = altAz(sunEq.raH, sunEq.decDeg, lst, s.latitude);
-    const moon = moonApprox(s.dayOfYear);
+    const moon = moonApprox(tDay, s.year);
     const moonPos = altAz(moon.raH, moon.decDeg, lst, s.latitude);
     const star = earthSnap?.star;
     const isSun = !!star?.isSun;
@@ -356,7 +358,7 @@ export class EarthView {
       mV, lux: snLux, mLim, skyLevel, starAlt: starPos?.alt, starAz: starPos?.az, starUp,
       sunAlt: sun.alt, moon, moonUp: moonPos.alt > 0, riseHour, isSun,
       comparison: mV != null ? brightnessComparison(mV) : null,
-      timeLabel: `${dateLabel(s.dayOfYear)} ${hourLabel(s.hour)}`,
+      timeLabel: `${dateLabel(s.dayOfYear, s.year)} ${hourLabel(s.hour)}`,
       Tcol,
     };
     return this.info;

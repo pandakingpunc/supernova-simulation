@@ -3,7 +3,7 @@
  * plus the light-travel-time readout with "jump to light arrival".
  */
 import { h, slider, button, dataRow, setChildren } from './dom.js';
-import { dateLabel, hourLabel } from '../physics/skyMath.js';
+import { dateLabel, hourLabel, daysInYear } from '../physics/skyMath.js';
 import { fmtYears, fmtDuration } from '../core/units.js';
 import { YEAR_S } from '../core/constants.js';
 
@@ -11,7 +11,7 @@ export function createEarthPanel(ctx) {
   const { earth, sim, store, actions } = ctx;
   const s = earth.state;
   const latS = slider({ label: 'Observer latitude', min: -90, max: 90, step: 1, value: s.latitude, format: (v) => `${Math.abs(v).toFixed(0)}° ${v >= 0 ? 'N' : 'S'}`, onInput: (v) => { s.latitude = v; } });
-  const dayS = slider({ label: 'Date', min: 1, max: 365, step: 1, value: s.dayOfYear, format: (v) => dateLabel(v), onInput: (v) => { s.dayOfYear = v; } });
+  const dayS = slider({ label: 'Date', min: 1, max: daysInYear(s.year), step: 1, value: s.dayOfYear, format: (v) => dateLabel(v, s.year), onInput: (v) => { s.dayOfYear = v; } });
   const hourS = slider({ label: 'Local time', min: 0, max: 23.99, step: 0.05, value: s.hour, format: (v) => hourLabel(v), onInput: (v) => { s.hour = v; } });
   const fovS = slider({ label: 'Field of view', min: 45, max: 160, step: 1, value: s.fovDeg, format: (v) => `${v.toFixed(0)}°`, onInput: (v) => { s.fovDeg = v; } });
   const speedS = slider({ label: 'Clock speed (auto-advance)', min: 0.05, max: 4, step: 0.05, value: s.hoursPerSecond, format: (v) => `${v.toFixed(2)} h/s`, onInput: (v) => { s.hoursPerSecond = v; } });

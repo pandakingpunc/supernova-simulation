@@ -8,11 +8,22 @@ import { DEG } from '../core/math.js';
 
 const OBLIQUITY = 23.44 * DEG;
 const SYNODIC_MONTH = 29.530589; // days
-const NEW_MOON_2026_DOY = 18.83; // 2026-01-18 19:52 UTC
+const NEW_MOON_EPOCH_MS = Date.UTC(2000, 0, 6, 18, 14); // a known new Moon
+const DAY_MS = 864e5;
 
-/** Sun's ecliptic longitude (rad) — 0 at the March equinox (~day 80). */
+/** Number of days in a calendar year (365 or 366). */
+export function daysInYear(year) {
+  return (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / DAY_MS;
+}
+
+/**
+ * Sun's ecliptic longitude (rad), 0 at the March equinox (~day 80): mean
+ * motion plus the equation of centre (perihelion ~day 3, up to ±1.9°).
+ */
 export function sunEclipticLongitude(dayOfYear) {
-  return ((dayOfYear - 80) / 365.25) * Math.PI * 2;
+  const M = ((dayOfYear - 3) / 365.25) * Math.PI * 2;
+  const centre = (1.915 * Math.sin(M) + 0.02 * Math.sin(2 * M)) * DEG;
+  return ((dayOfYear - 81.5) / 365.25) * Math.PI * 2 + centre;
 }
 
 /** Equatorial coordinates from ecliptic longitude (latitude 0). */
@@ -28,7 +39,8 @@ export function sunRaDec(dayOfYear) {
 
 /** Local sidereal time (hours). At local solar noon the Sun's RA is on the meridian. */
 export function localSiderealTime(dayOfYear, localHour) {
-  const { raH } = sunRaDec(dayOfYear);
+  // fractional day (noon = whole day) so the sky is continuous across midnight
+  const { raH } = sunRaDec(dayOfYear + (localHour - 12) / 24);
   return (((raH + (localHour - 12)) % 24) + 24) % 24;
 }
 
@@ -44,8 +56,9 @@ export function altAz(raH, decDeg, lstH, latDeg) {
 }
 
 /** Crude Moon: position along the ecliptic from its age, phase from elongation. */
-export function moonApprox(dayOfYear) {
-  const age = (((dayOfYear - NEW_MOON_2026_DOY) % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+export function moonApprox(dayOfYear, year = new Date().getFullYear()) {
+  const sinceEpoch = (Date.UTC(year, 0, 1) + (dayOfYear - 1) * DAY_MS - NEW_MOON_EPOCH_MS) / DAY_MS;
+  const age = ((sinceEpoch % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
   const elongation = (age / SYNODIC_MONTH) * Math.PI * 2; // 0 new, π full
   const lambda = sunEclipticLongitude(dayOfYear) + elongation;
   const eq = eclipticToEquatorial(lambda);
@@ -63,7 +76,7 @@ export function moonApprox(dayOfYear) {
 export function nextRise(raH, decDeg, latDeg, dayOfYear, fromHour, minAlt = 5) {
   for (let i = 1; i <= 144; i++) {
     const h = fromHour + i / 6;
-    const { alt } = altAz(raH, decDeg, localSiderealTime(dayOfYear, h % 24), latDeg);
+    const { alt } = altAz(raH, decDeg, localSiderealTime(dayOfYear + Math.floor(h / 24), h % 24), latDeg);
     if (alt > minAlt) return h % 24;
   }
   return null;
@@ -76,13 +89,15 @@ export function dayOfYear(date = new Date()) {
   return Math.floor((now - start) / 864e5) + 1;
 }
 
-export function dateLabel(dayOfYear) {
-  const d = new Date(Date.UTC(2026, 0, 1) + (dayOfYear - 1) * 864e5);
+export function dateLabel(dayOfYear, year = new Date().getFullYear()) {
+  const d = new Date(Date.UTC(year, 0, 1) + (dayOfYear - 1) * DAY_MS);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 export function hourLabel(h) {
-  const hh = Math.floor(((h % 24) + 24) % 24);
-  const mm = Math.floor((((h % 1) + 1) % 1) * 60);
+  if (!Number.isFinite(h)) return '--:--';
+  const total = Math.round((((h % 24) + 24) % 24) * 60) % 1440; // whole minutes, so 13.1666 h reads 13:10
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
