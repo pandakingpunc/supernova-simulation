@@ -312,14 +312,16 @@ function stateAt(model, t) {
     s.Ekin = p.E;
     s.Mbound = p.remnantMass;
     s.breakoutProgress = 1;
-    if (t < p.tSedov) {
-      s.Rshock = p.Rstar + p.vMax * te;
-      s.vShock = p.vMax;
-    } else {
-      const tS = p.tSedov - p.tBreakout;
-      s.Rshock = p.RSedov * Math.pow(te / tS, 0.4);
-      s.vShock = 0.4 * s.Rshock / te;
-    }
+    // Free expansion → Sedov–Taylor, joined by a smooth min-blend so R and v = dR/dt stay continuous
+    const teS = Math.max(te, 1);
+    const tS = p.tSedov - p.tBreakout;
+    const n = 8;
+    const Rff = p.Rstar + p.vMax * te;
+    const Rst = p.RSedov * Math.pow(teS / tS, 0.4);
+    const vst = 0.4 * Rst / teS;
+    const Rinv = Math.pow(Rff, -n) + Math.pow(Rst, -n);
+    s.Rshock = Math.pow(Rinv, -1 / n);
+    s.vShock = (Math.pow(Rff, -n - 1) * p.vMax + Math.pow(Rst, -n - 1) * vst) / Math.pow(Rinv, (n + 1) / n);
     s.Rej = s.Rshock;
     s.flash = te < p.tBoDur * 4 ? Math.exp(-te / (p.tBoDur * 1.2)) * smoothstep(0, p.tBoDur * 0.3, te) : 0;
     // Photosphere: expands with the inner ejecta, then recedes in mass coordinate after the plateau/peak
