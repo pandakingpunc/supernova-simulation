@@ -135,6 +135,13 @@ for (const star of progenitors) {
   // (the compact-object term pulsarLum is smoothstepped in with the breakout flash, so L is continuous as is)
   check(ratioOk(bo[0].L, bo[1].L, 0.05), `${tag}: L jumps at shock breakout (${bo[0].L} -> ${bo[1].L})`);
   check(ratioOk(bo[0].Tcolor, bo[1].Tcolor, 0.01), `${tag}: Tcolor jumps at shock breakout (${bo[0].Tcolor} -> ${bo[1].Tcolor})`);
+  check(ratioOk(bo[0].vShock, bo[1].vShock, 0.01), `${tag}: vShock jumps at shock breakout (${bo[0].vShock} -> ${bo[1].vShock})`);
+  {
+    // after the breakout duration the readout is the ejecta speed again (dR/dt)
+    const t1 = p.tBreakout + p.tBoDur, dt = p.tBoDur * 1e-4;
+    const dRdt = (m.stateAt(t1 + dt).Rshock - m.stateAt(t1 - dt).Rshock) / (2 * dt);
+    check(ratioOk(m.stateAt(t1).vShock, dRdt, 0.01), `${tag}: vShock ${m.stateAt(t1).vShock} differs from dR/dt ${dRdt} at the end of the breakout`);
+  }
   check(m.stateAt(p.tBreakout * 0.999).L > 0.5 * p.Lstar, `${tag}: L collapses before breakout`);
   // after the flash: no step in L, colour temperature, shock radius or shock velocity (incl. plateau end and Sedov transition)
   let prev = m.stateAt(p.tBreakout + p.tBoDur);
@@ -449,8 +456,14 @@ for (const day of [10, 100, 200, 300]) {
   check(eq.raH > 0 && eq.raH < 24 && Number.isFinite(meanLon), 'sunRaDec(100) invalid');
   check(Math.abs(sunRaDec(80).decDeg) < 1.5, `Sun declination at the March equinox: ${sunRaDec(80).decDeg}`);
 }
-for (const [h, want] of [[13.1666666, '13:10'], [0.15, '00:09'], [12, '12:00'], [24, '00:00'], [23.9999, '00:00'], [-0.5, '23:30'], [26.25, '02:15'], [NaN, '--:--'], [Infinity, '--:--']]) {
+for (const [h, want] of [[13.1666666, '13:10'], [0.15, '00:09'], [12, '12:00'], [24, '00:00'], [23.9999, '23:59'], [23.995, '23:59'], [-0.5, '23:30'], [26.25, '02:15'], [NaN, '--:--'], [Infinity, '--:--']]) {
   check(hourLabel(h) === want, `hourLabel(${h}) = '${hourLabel(h)}', expected '${want}'`);
+}
+
+// Moon age moves continuously through the day (no whole-day steps at local midnight)
+{
+  const a = moonApprox(11, 2024).ageDays, b = moonApprox(11.5, 2024).ageDays;
+  check(Math.abs(((b - a + 14.8) % 29.53 + 29.53) % 29.53 - 14.8 - 0.5) < 0.05, `Moon age advances ${(b - a).toFixed(3)} d in half a day`);
 }
 
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll physics checks passed.');
