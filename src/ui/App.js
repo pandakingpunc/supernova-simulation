@@ -70,8 +70,9 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
       toast('Stellar Evolution Mode: the rest of the star\'s life, compressed to about a minute.');
     },
     triggerSupernova(forced) {
+      if (sim.phase === 'supernova') return;
       const scenario = sim.triggerSupernova({ forced });
-      if (!scenario) { toast('This star cannot explode naturally. Use "Trigger Experimental Supernova".', 'warn'); return; }
+      if (!scenario) { if (!forced) toast('This star cannot explode naturally. Use "Trigger Experimental Supernova".', 'warn'); return; }
       const label = sim.model.params.label;
       toast(sim.forced ? `Experimental scenario: ${label}. Not an astronomical prediction.` : `${label} — core collapse begins.`, sim.forced ? 'warn' : 'info');
       if (store.state.view === 'compare') actions.setView('close');
