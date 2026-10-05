@@ -22,6 +22,7 @@ import { createBottomBar } from './BottomBar.js';
 import { createOverlay } from './Overlay.js';
 import { createComparePanel } from './ComparePanel.js';
 import { createIntro } from './Intro.js';
+import { button } from './dom.js';
 import { toast } from './Toast.js';
 import { YEAR_S } from '../core/constants.js';
 import { fmtDuration } from '../core/units.js';
@@ -55,6 +56,11 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
   const earth = new EarthView(earthCanvas);
 
   const persist = () => saveSettings({ quality: store.state.quality, qualityLocked: store.state.qualityLocked, respectLightTravel: store.state.respectLightTravel, introSeen: true });
+
+  // Touch devices have no H key: a small button brings the interface back while it is hidden.
+  const showUiBtn = button('Show interface', () => actions.toggleUI(), 'small primary');
+  Object.assign(showUiBtn.style, { position: 'fixed', top: '10px', right: '10px', zIndex: '30', display: 'none' });
+  document.body.append(showUiBtn);
 
   const actions = {
     loadStar(star) {
@@ -123,7 +129,8 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
       const hidden = !store.state.uiHidden;
       store.set({ uiHidden: hidden });
       document.body.classList.toggle('ui-hidden', hidden);
-      if (hidden) toast('Interface hidden — press H to bring it back', { duration: 2500 });
+      showUiBtn.style.display = hidden ? '' : 'none';
+      if (hidden) toast('Interface hidden — press H or tap "Show interface" to bring it back', { duration: 2500 });
     },
     showIntro() { document.body.append(createIntro()); },
     toast(msg, kind = 'info') { toast(msg, { kind }); },
