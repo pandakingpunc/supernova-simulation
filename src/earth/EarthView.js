@@ -58,7 +58,7 @@ function generateMilkyWay() {
 
 function horizonProfile(azDeg) {
   const a = azDeg * DEG;
-  return 1.6 + 1.1 * Math.sin(a * 3 + 0.4) + 0.7 * Math.sin(a * 7.3 + 2.1) + 0.45 * Math.sin(a * 17 + 1.3) + 0.3 * Math.sin(a * 41 + 0.7);
+  return 1.6 + 1.1 * Math.sin(a * 3 + 0.4) + 0.7 * Math.sin(a * 7 + 2.1) + 0.45 * Math.sin(a * 17 + 1.3) + 0.3 * Math.sin(a * 41 + 0.7);
 }
 
 export class EarthView {
@@ -101,7 +101,8 @@ export class EarthView {
     c.addEventListener('pointercancel', stop);
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.state.fovDeg = clamp(this.state.fovDeg * Math.exp(e.deltaY * 0.001), 45, 160);
+      const dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1); // line/page wheels (Firefox) -> pixels
+      this.state.fovDeg = clamp(this.state.fovDeg * Math.exp(dy * 0.001), 45, 160);
     }, { passive: false });
   }
 
@@ -120,8 +121,9 @@ export class EarthView {
     this.state.lookAlt = clamp(this.info.starAlt - 8, -8, 75);
   }
 
-  /** Advance the local clock until the star is above the horizon. */
+  /** Advance the local clock until the star is above the horizon. Returns true, false (never rises) or 'up' (already above). */
   jumpToStarRise() {
+    if (this.info.starUp) return 'up';
     const r = this.info.riseHour;
     if (r == null) return false;
     if (r < this.state.hour) this.state.dayOfYear = (this.state.dayOfYear % daysInYear(this.state.year)) + 1;

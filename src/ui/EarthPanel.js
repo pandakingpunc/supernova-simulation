@@ -17,7 +17,11 @@ export function createEarthPanel(ctx) {
   const speedS = slider({ label: 'Clock speed (auto-advance)', min: 0.05, max: 4, step: 0.05, value: s.hoursPerSecond, format: (v) => `${v.toFixed(2)} h/s`, onInput: (v) => { s.hoursPerSecond = v; } });
   const autoBtn = button('Auto-advance: off', () => { s.autoAdvance = !s.autoAdvance; autoBtn.textContent = `Auto-advance: ${s.autoAdvance ? 'on' : 'off'}`; autoBtn.classList.toggle('active', s.autoAdvance); });
   const lookBtn = button('Look at star', () => earth.lookAtStar());
-  const riseBtn = button('Jump to star rise', () => { if (!earth.jumpToStarRise()) actions.toast('The star never rises above the horizon at this latitude.', 'warn'); });
+  const riseBtn = button('Jump to star rise', () => {
+    const res = earth.jumpToStarRise();
+    if (res === 'up') actions.toast('The star is already above the horizon.', 'info');
+    else if (!res) actions.toast('The star never rises above the horizon at this latitude.', 'warn');
+  });
 
   // rows/note are rebuilt each tick; the jump button is persistent so clicks and focus survive
   const rowsBox = h('div', {});
