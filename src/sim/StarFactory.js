@@ -47,7 +47,7 @@ export function buildCustomStar(params) {
     stageProgress: progress,
     radiusOverride: params.radiusOverride || 0,
     temperatureOverride: params.temperatureOverride || 0,
-    type: classify({ mass, radius, temperature, luminosity }).type,
+    type: classify({ mass, radius, temperature, luminosity, stageKey: track.stages[stageIndex].key }).type,
     blurb: 'A user-defined star. All values are model predictions, not observations.',
   };
 }
@@ -55,7 +55,7 @@ export function buildCustomStar(params) {
 /** Derived, human-readable properties for any star (preset or custom). */
 export function describeStar(star) {
   const track = buildEvolutionTrack(star);
-  const cls = classify({ mass: star.mass, radius: star.radius, temperature: star.temperature, luminosity: star.luminosity });
+  const cls = classify({ mass: star.mass, radius: star.radius, temperature: star.temperature, luminosity: star.luminosity, stageKey: star.currentStageKey ?? 'ms' });
   const remnant = predictRemnant({ mass: star.mass, metallicity: star.metallicity, rotation: star.rotation });
   const scenario = determineScenario(star, false);
   const forcedScenario = determineScenario(star, true);

@@ -71,7 +71,7 @@ export function luminosityClass(M, R, L) {
   if (ratio > 25) return M > 8 ? (L > 3e4 ? 'Ia' : 'Iab') : 'III'; // low-mass AGB/RGB giants are never supergiants
   if (ratio > 8) return M > 8 ? 'Ib' : 'III';
   if (ratio > 2.2) return 'IV';
-  if (ratio < 0.02) return 'D'; // degenerate
+  if (R < 0.03 && ratio < 0.6) return 'D'; // degenerate (absolute radius: ZAMS radius shrinks with mass)
   return 'V';
 }
 
@@ -96,15 +96,15 @@ export function colourWord(T) {
 }
 
 /** Full classification of a star from its physical parameters. */
-export function classify({ mass, radius, temperature, luminosity }) {
+export function classify({ mass, radius, temperature, luminosity, stageKey }) {
   const spec = spectralType(temperature);
   const lum = luminosityClass(mass, radius, luminosity);
   const words = CLASS_LABELS[lum] ?? lum;
   const colour = colourWord(temperature);
   let flavour = `${colour} ${words}`;
-  if (lum === 'V' && mass < 0.6) flavour = 'red dwarf';
+  if (lum === 'V' && mass < 0.6 && temperature < 4000) flavour = 'red dwarf';
   if (lum === 'V' && temperature > 30000) flavour = 'blue main-sequence O star';
-  if (mass > 40 && temperature > 25000 && radius < 30) flavour = 'Wolf–Rayet / stripped massive star';
+  if (stageKey === 'wr') flavour = 'Wolf–Rayet / stripped massive star';
   return { spectral: spec, lumClass: lum, type: `${spec} ${lum}`, description: flavour };
 }
 
