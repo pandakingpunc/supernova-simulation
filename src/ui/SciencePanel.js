@@ -3,7 +3,7 @@
  * four time-series charts and the Core Monitor cutaway. Values update at
  * ~10 Hz to keep DOM work negligible.
  */
-import { h, dataRow, chip, setChildren } from './dom.js';
+import { h, dataRow, chip, setChildren, append } from './dom.js';
 import { Chart } from './Chart.js';
 import { CoreMonitor } from './CoreMonitor.js';
 import { sci, fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtDensity, fmtDuration, fmtYears, fmtVelocity, fmtEnergy, fmtLengthMeters, fmtDistanceLy } from '../core/units.js';
@@ -116,13 +116,13 @@ export function createSciencePanel(ctx) {
         const extra = [];
         if (r.spinPeriod0) extra.push(dataRow('Spin period (birth)', `${(r.spinPeriod0 * 1e3).toFixed(0)} ms`, 'Estimated'));
         if (r.bField) extra.push(dataRow('Magnetic field', `${sci(r.bField, 0)} G`, 'Estimated'));
-        remnantBox.append(
+        append(remnantBox, [
           h('h3', { class: 'section-title', style: { marginTop: '12px' } }, 'Stellar remnant'),
           h('div', { class: 'phase-banner' }, h('div', {}, h('div', {}, info.name), h('div', { class: 'sub' }, `${r.mass > 0 ? fmtSolarMass(r.mass) + ' · ' : ''}${r.radiusM > 0 ? 'radius ' + fmtLengthMeters(r.radiusM) : 'nothing left behind'}`))),
           h('p', { class: 'note' }, info.description),
           ...extra,
           r.type !== 'none' && r.type !== 'white-dwarf' && r.type !== 'helium-white-dwarf' ? h('p', { class: 'note' }, 'Use the Remnant View camera to inspect it. Rotation is slowed for visibility; real pulsars spin 10–100 times per second.') : null,
-        );
+        ]);
       }
     }
     if (remnantVisible && snap.remnant?.spinPeriod0) {
