@@ -320,7 +320,8 @@ function stateAt(model, t) {
     s.Rphot = te > 3 * YEAR_S ? 0 : Math.min(p.Rstar + p.vPhot * te * Math.max(recede, 0.15), s.Rshock);
     // Colour temperature: hot flash cooling toward the hydrogen-recombination temperature
     const Tcool = p.TBreakout * Math.pow(Math.max(te, p.tBoDur) / p.tBoDur, -0.5);
-    s.Tcolor = clamp(Tcool, te > tRecede ? 3500 : 5200, p.TBreakout);
+    const Tfloor = 5200 - (5200 - 3500) * smoothstep(tRecede, tRecede * 1.5, te); // recombination floor relaxes after the plateau
+    s.Tcolor = clamp(Tcool, Tfloor, p.TBreakout);
   } else {
     s.Tcolor = p.Tstar;
   }
