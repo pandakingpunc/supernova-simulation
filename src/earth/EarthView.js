@@ -272,7 +272,9 @@ export class EarthView {
       ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.clip();
       ctx.fillStyle = dark;
       ctx.fillRect(x - R, y - R, 2 * R, 2 * R);
-      const side = moon.waxing ? 1 : -1; // waxing Moon is lit on the western (right-hand) side
+      // the lit limb faces the Sun on screen (which side that is depends on hemisphere and look direction)
+      const dAzSun = ((sun.az - moonPos.az + 540) % 360) - 180;
+      const side = Math.abs(dAzSun) > 150 ? (moon.waxing ? 1 : -1) : (dAzSun >= 0 ? 1 : -1); // near full, the lit ellipse fills the disc
       ctx.fillStyle = lit;
       ctx.fillRect(side > 0 ? x : x - R, y - R, R, 2 * R);
       const ew = Math.abs(Math.cos(moon.elongation)) * R;
