@@ -289,7 +289,7 @@ export class Simulation {
       nebula: !!st.stage.nebula || ended,
       color: blackbodyRGB(st.T),
       timeRate: this.timeRate,
-      dataLabel: this.evolved ? 'Simulation' : 'Observed',
+      dataLabel: this.star.observed && !this.evolved ? 'Observed' : 'Simulation',
       remnant: ended ? this.remnant : null,
       postAgeS: this.postAgeS,
       model: null,
