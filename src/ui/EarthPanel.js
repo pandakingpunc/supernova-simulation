@@ -7,6 +7,8 @@ import { dateLabel, hourLabel, daysInYear } from '../physics/skyMath.js';
 import { fmtYears, fmtDuration } from '../core/units.js';
 import { YEAR_S } from '../core/constants.js';
 
+const T_EXP_START = -3; // s before collapse where the explosion clock starts (keep in sync with Simulation.js)
+
 export function createEarthPanel(ctx) {
   const { earth, sim, store, actions } = ctx;
   const s = earth.state;
@@ -45,16 +47,21 @@ export function createEarthPanel(ctx) {
     const star = snap.star;
     const delay = star.distanceLy; // years
     const respect = store.state.respectLightTravel;
-    const rows = [dataRow('Distance', `${fmtDuration(delay * YEAR_S)} of light travel`, 'Observed')];
+    const rows = [dataRow('Distance', `${fmtDuration(delay * YEAR_S)} of light travel`, star.observed ? 'Observed' : 'Simulation')];
     if (snap.phase === 'supernova') {
-      const arrived = !respect || snap.tExp >= delay * YEAR_S;
-      rows.push(dataRow('Event occurred', fmtDuration(snap.tExp) + ' ago (star frame)', 'Simulation'));
-      rows.push(dataRow('Light reaches Earth', arrived ? 'now visible' : `in ${fmtDuration(delay * YEAR_S - snap.tExp)}`, 'Simulation'));
+      // light from the collapse reaches Earth when the star-frame clock hits delay + T_EXP_START (same rule as Simulation.earthSnapshot)
+      const arrivalT = delay * YEAR_S + T_EXP_START;
+      const arrived = !respect || snap.tExp >= arrivalT;
+      const remaining = Math.max(0, arrivalT - snap.tExp);
+      rows.push(snap.tExp < 0
+        ? dataRow('Collapse in', fmtDuration(-snap.tExp) + ' (star frame)', 'Simulation')
+        : dataRow('Event occurred', fmtDuration(snap.tExp) + ' ago (star frame)', 'Simulation'));
+      rows.push(dataRow('Light reaches Earth', arrived ? 'now visible' : `in ${fmtDuration(remaining)}`, 'Simulation'));
       setChildren(rowsBox, ...rows);
       setChildren(noteBox,
         h('p', { class: `note ${arrived ? 'ok' : 'warn'}` }, arrived
           ? (respect ? `Earth is seeing light that left the star ${fmtDuration(delay * YEAR_S)} ago. Near the star, the remnant is already that old.` : 'Light-travel delay is ignored: Earth sees the explosion instantly (not physical).')
-          : `The explosion has happened, but its light is still ${fmtDuration(delay * YEAR_S - snap.tExp)} away. Earth still sees the old star.`),
+          : `${snap.tExp < 0 ? 'The star is about to collapse, and' : 'The explosion has happened, but'} its light is still ${fmtDuration(remaining)} away. Earth still sees the old star.`),
       );
       jumpRow.style.display = arrived ? 'none' : '';
     } else {

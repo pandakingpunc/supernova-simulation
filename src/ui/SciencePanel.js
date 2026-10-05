@@ -78,7 +78,7 @@ export function createSciencePanel(ctx) {
       list.push(dataRow('⁵⁶Ni synthesised', fmtSolarMass(p.MNi), 'Estimated'));
       list.push(dataRow('Remnant', `${p.remnant.short} · ${fmtSolarMass(p.remnantMass)}`, 'Estimated'));
     } else {
-      list.push(dataRow('Stellar age', fmtYears(snap.ageYr), snap.phase === 'evolution' && !sim.evolved ? 'Observed' : 'Simulation'));
+      list.push(dataRow('Stellar age', fmtYears(snap.ageYr), snap.phase === 'evolution' && !sim.evolved && star.observed ? 'Observed' : 'Simulation'));
       list.push(dataRow('Radius', fmtSolarRadius(snap.R), tag));
       list.push(dataRow('Luminosity', fmtSolarLum(snap.L), tag));
       list.push(dataRow('Surface temperature', fmtKelvin(snap.T), tag));
@@ -91,7 +91,7 @@ export function createSciencePanel(ctx) {
       }
       if (snap.nebulaAgeS > 0) list.push(dataRow('Nebula age', fmtDuration(snap.nebulaAgeS), 'Simulation'));
     }
-    list.push(dataRow('Distance from observer', store.state.view === 'earth' ? fmtDistanceLy(star.distanceLy) : fmtLengthMeters(distToObserver), store.state.view === 'earth' ? 'Observed' : 'Simulation'));
+    list.push(dataRow('Distance from observer', store.state.view === 'earth' ? fmtDistanceLy(star.distanceLy) : fmtLengthMeters(distToObserver), store.state.view === 'earth' && star.observed ? 'Observed' : 'Simulation'));
     setChildren(rows, ...list);
 
     // --- charts ---
