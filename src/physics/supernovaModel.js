@@ -408,7 +408,7 @@ function buildTimeline(p) {
     add(T_INFALL, 'Core collapse begins', 'The inner core falls inward at up to a quarter of the speed of light.');
     add(T_BOUNCE, 'Core bounce at nuclear density', 'The core stiffens at ~3×10¹⁴ g/cm³ and rebounds, launching a shock.');
     add(T_SHOCK_STALL, 'Shock forms and stalls', 'Photodisintegration of infalling iron drains the shock energy.');
-    add(T_SHOCK_REVIVAL, 'Neutrino heating revives the shock', 'A fraction of the 10⁵³ erg neutrino burst is absorbed behind the shock.');
+    add(T_SHOCK_REVIVAL, 'Neutrino heating revives the shock', 'A fraction of the ~3×10⁵³ erg neutrino burst is absorbed behind the shock.');
     add(10, 'Neutrino burst complete', `~${(p.Eneutrino / 1e-7).toExponential(1)} erg carried away by neutrinos.`);
     if (p.remnant.type === 'black-hole') add(5, 'Proto-neutron star collapses into a black hole', 'Fallback pushes the core past the maximum neutron-star mass.');
     else add(2, 'Proto-neutron star forms', `A ${p.remnant.mass.toFixed(2)} M☉ neutron star begins to cool.`);
