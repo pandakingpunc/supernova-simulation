@@ -268,8 +268,10 @@ export class Simulation {
     const st = this.currentEvolutionState();
     const ended = this.phase === 'ended';
     // Planetary nebula age: grows through the 'pn' stage and keeps growing after the star has ended.
+    // Helium white dwarfs (no 'pn' stage) never make one.
+    const hasPN = this.track.stages.some((s) => s.nebula);
     let nebulaAgeS = 0;
-    if (ended) nebulaAgeS = PN_STAGE_DURATION_YR * YEAR_S + this.postAgeS;
+    if (ended && hasPN) nebulaAgeS = PN_STAGE_DURATION_YR * YEAR_S + this.postAgeS;
     else if (st.stage.nebula) nebulaAgeS = st.progress * PN_STAGE_DURATION_YR * YEAR_S;
     const pnStage = this.track.stages.find((s) => s.key === 'agb');
     return {
@@ -286,7 +288,7 @@ export class Simulation {
       mass: this.star.mass,
       instability: st.instability,
       remnantForming: st.remnantForming,
-      nebula: !!st.stage.nebula || ended,
+      nebula: !!st.stage.nebula || (ended && hasPN),
       color: blackbodyRGB(st.T),
       timeRate: this.timeRate,
       dataLabel: this.star.observed && !this.evolved ? 'Observed' : 'Simulation',

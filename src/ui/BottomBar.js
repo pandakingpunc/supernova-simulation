@@ -54,7 +54,9 @@ export function createBottomBar(ctx) {
       triggerBtn.textContent = natural ? 'Trigger Supernova' : 'Trigger Experimental Supernova';
       triggerBtn.className = `btn ${natural ? 'danger' : 'warn'}`;
       big.textContent = fmtYears(snap.ageYr, 2);
-      small.textContent = snap.phase === 'ended' ? `${snap.remnant.name} · nebula age ${fmtDuration(snap.nebulaAgeS)}` : `stellar age · ${snap.stage.name}`;
+      small.textContent = snap.phase === 'ended'
+        ? `${snap.remnant.name} · ${snap.nebulaAgeS > 0 ? `nebula age ${fmtDuration(snap.nebulaAgeS)}` : `age ${fmtDuration(snap.postAgeS)}`}`
+        : `stellar age · ${snap.stage.name}`;
     }
     const r = snap.timeRate;
     rate.textContent = r > 0 ? `time acceleration ≈ ${sci(r, 1)}×` : 'paused';
