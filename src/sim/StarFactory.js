@@ -60,6 +60,11 @@ export function describeStar(star) {
   const scenario = determineScenario(star, false);
   const forcedScenario = determineScenario(star, true);
   const stageIdx = Math.max(0, track.stages.findIndex((s) => s.key === (star.currentStageKey ?? 'ms')));
+  // Catalogue ages can exceed the modelled lifetime: measure what remains from the star's place in the track.
+  const cur = track.stages[stageIdx];
+  const trackAgeYr = cur.startYr + cur.durationYr * clamp(star.stageProgress ?? 0, 0, 1);
+  const remainingYr = Math.max(0, track.totalLifetimeYr - trackAgeYr);
+  const lifetimeYr = Math.max(track.totalLifetimeYr, (star.ageYr ?? 0) + remainingYr);
   const path = track.stages.map((s) => s.name);
   const mag = quiescentMagnitude(star);
   return {
@@ -71,9 +76,9 @@ export function describeStar(star) {
     forcedScenario,
     forcedLabel: forcedScenario ? SCENARIO_INFO[forcedScenario].label : null,
     terminal: TERMINAL_LABELS[track.terminal],
-    lifetimeYr: track.totalLifetimeYr,
+    lifetimeYr,
     mainSequenceYr: track.mainSequenceYr,
-    remainingYr: Math.max(0, track.totalLifetimeYr - (star.ageYr ?? 0)),
+    remainingYr,
     currentStage: track.stages[stageIdx],
     path,
     apparentMagnitude: mag.mV,
