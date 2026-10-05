@@ -84,7 +84,7 @@ export function createSciencePanel(ctx) {
       list.push(dataRow('Surface temperature', fmtKelvin(snap.T), tag));
       list.push(dataRow('Core temperature', fmtKelvin(snap.Tc), 'Estimated'));
       list.push(dataRow('Core density', fmtDensity(snap.rhoc), 'Estimated'));
-      list.push(dataRow('Mass', fmtSolarMass(snap.mass), star.observed ? 'Observed' : 'Simulation'));
+      list.push(dataRow('Mass', fmtSolarMass(snap.phase === 'ended' && snap.remnant ? snap.remnant.mass : snap.mass), tag));
       if (snap.phase === 'evolution') {
         list.push(dataRow('Stage duration', fmtYears(snap.stage.durationYr), 'Estimated'));
         list.push(dataRow('Time to end of life', fmtYears(Math.max(0, snap.track.totalLifetimeYr - (snap.stage.startYr + snap.stage.durationYr * snap.stageProgress))), 'Estimated'));
