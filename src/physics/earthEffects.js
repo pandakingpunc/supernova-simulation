@@ -74,7 +74,7 @@ export function assessImpact(p, peakL, distanceLy) {
   const vsSolar = irradiance / SOLAR_CONSTANT;
 
   // Ozone: column depletion ∝ gamma/X-ray fluence ∝ E / d²
-  const ozoneDepletion = clamp(OZONE_REF_FRACTION * Math.pow(OZONE_REF_PC / dPc, 2) * Math.sqrt(eRel), 0, 0.95);
+  const ozoneDepletion = clamp(OZONE_REF_FRACTION * Math.pow(OZONE_REF_PC / dPc, 2) * eRel, 0, 0.95);
   const uvbIncrease = ozoneDepletion * 2; // ~2% more UV-B per 1% ozone lost (radiation amplification factor)
   // Cosmic-ray flux multiplier once the remnant shell reaches the solar system (thousands of years later)
   const cosmicRayFactor = 1 + 30 * Math.pow(10 / dPc, 2) * eRel;

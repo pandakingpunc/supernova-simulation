@@ -163,7 +163,7 @@ scripts/      physics sanity checks
 | Remnant evolution | Free expansion until swept ISM mass = ejecta mass (n = 1 cm⁻³), then Sedov–Taylor R ∝ t^(2/5) |
 | Remnant type | White dwarf < 8 M☉ (Kalirai 2008 initial–final mass relation); neutron star 8–~20 M☉; black hole above, metallicity dependent; pair instability 140–260 M☉ at low Z |
 | Apparent magnitude | M_bol = 4.74 − 2.5 log₁₀(L/L☉), inverse-square law, approximate bolometric correction |
-| Ozone depletion | ~47% at 8 pc for a canonical supernova (Gehrels et al. 2003), scaled ∝ E / d² |
+| Ozone depletion | ~47% at 8 pc for a canonical supernova (Gehrels et al. 2003), scaled ∝ E / d² (linear in explosion energy, clamped at 95%) |
 | Kill distance | ~8–10 pc (Fields et al. 2020) |
 | Neutrino dose | ~5 Sv at 2.3 AU for a 3×10⁵³ erg burst, ∝ 1/d² |
 | Sky positions | Local sidereal time from date and local solar time; Sun on the ecliptic; Moon from its synodic age |
