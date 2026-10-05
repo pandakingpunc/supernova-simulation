@@ -4,7 +4,7 @@
  * storage never breaks the app. Total footprint stays in the kilobytes.
  */
 const PREFIX = 'supernova-sim:';
-const MAX_SAVED_STARS = 24;
+export const MAX_SAVED_STARS = 24;
 
 function read(key, fallback) {
   try {
@@ -18,8 +18,10 @@ function read(key, fallback) {
 function write(key, value) {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    return true;
   } catch {
-    /* storage unavailable or full: ignore, the app works without it */
+    /* storage unavailable or full: the app works without it, callers may report the failure */
+    return false;
   }
 }
 
@@ -43,11 +45,11 @@ export const loadSavedStars = () => {
 export function saveStar(star) {
   const list = loadSavedStars().filter((s) => s.id !== star.id);
   list.unshift(star);
-  write('stars', list.slice(0, MAX_SAVED_STARS));
-  return list;
+  const evicted = list.length > MAX_SAVED_STARS; // the oldest presets fall off the end
+  const kept = list.slice(0, MAX_SAVED_STARS);
+  return { ok: write('stars', kept), list: kept, evicted };
 }
 export function deleteStar(id) {
   const list = loadSavedStars().filter((s) => s.id !== id);
-  write('stars', list);
-  return list;
+  return { ok: write('stars', list), list };
 }

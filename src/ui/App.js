@@ -3,7 +3,7 @@
  * loop, keyboard shortcuts, persistence and adaptive quality.
  */
 import { createStore } from '../core/store.js';
-import { loadSettings, saveSettings, saveStar, deleteStar } from '../core/storage.js';
+import { loadSettings, saveSettings, saveStar, deleteStar, MAX_SAVED_STARS } from '../core/storage.js';
 import { Simulation } from '../sim/Simulation.js';
 import { SceneManager } from '../render/SceneManager.js';
 import { EarthView } from '../earth/EarthView.js';
@@ -117,12 +117,16 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     seek(t) { sim.seek(t); if (sim.timeMode === 'pause') sim.setTimeMode('cinematic'); },
     seekStage(i) { sim.seekStage(i); },
     saveCustomStar(star) {
-      saveStar(star);
+      const r = saveStar(star);
+      if (!r.ok) { toast(`Could not save ${star.name}: browser storage is blocked or full.`, { kind: 'warn' }); return; }
       store.set({ savedStarsVersion: store.state.savedStarsVersion + 1 });
-      toast(`${star.name} saved to your library (stored locally in this browser).`);
+      toast(r.evicted
+        ? `${star.name} saved (your oldest preset was removed: the limit is ${MAX_SAVED_STARS}).`
+        : `${star.name} saved to your library (stored locally in this browser).`);
     },
     deleteSavedStar(id) {
-      deleteStar(id);
+      const r = deleteStar(id);
+      if (!r.ok) { toast('Could not update saved stars: browser storage is blocked or full.', { kind: 'warn' }); return; }
       store.set({ savedStarsVersion: store.state.savedStarsVersion + 1 });
     },
     toggleUI() {
