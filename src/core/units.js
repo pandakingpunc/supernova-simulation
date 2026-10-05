@@ -10,9 +10,13 @@ const sup = (n) => String(n).split('').map((c) => SUP[c] ?? c).join('');
 export function sci(v, digits = 2) {
   if (!isFinite(v)) return '—';
   if (v === 0) return '0';
-  const e = Math.floor(Math.log10(Math.abs(v)));
-  const m = v / 10 ** e;
-  if (e >= -2 && e < 4) return v.toPrecision(digits + 1).replace(/\.?0+$/, '');
+  let e = Math.floor(Math.log10(Math.abs(v)));
+  let m = v / 10 ** e;
+  if (Math.abs(+m.toFixed(digits)) >= 10) { m /= 10; e += 1; } // mantissa rounded up to 10
+  if (e >= -2 && e < 4) {
+    const s = v.toFixed(Math.max(0, digits - e));
+    return s.includes('.') ? s.replace(/\.?0+$/, '') : s; // trim zeros only after a decimal point
+  }
   return `${m.toFixed(digits)}×10${sup(e)}`;
 }
 
