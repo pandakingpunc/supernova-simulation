@@ -163,6 +163,9 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
 
   // ---- keyboard ----
   window.addEventListener('keydown', (e) => {
+    const intro = document.querySelector('.intro');
+    if (e.key === 'Escape') { if (intro) { intro.remove(); persist(); } return; }
+    if (intro) return; // hotkeys stay inactive behind the intro modal
     if (e.target && (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable)) return;
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const presets = ['orbit', 'surface', 'wide', 'front', 'remnant'];
@@ -174,7 +177,6 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     else if (e.key === 'h' || e.key === 'H') actions.toggleUI();
     else if (e.key === 'e' || e.key === 'E') actions.setView('earth');
     else if (e.key === 'c' || e.key === 'C') actions.setView('close');
-    else if (e.key === 'Escape') document.querySelector('.intro')?.remove();
   });
 
   // ---- sizing ----
