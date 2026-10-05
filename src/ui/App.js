@@ -22,7 +22,7 @@ import { createBottomBar } from './BottomBar.js';
 import { createOverlay } from './Overlay.js';
 import { createComparePanel } from './ComparePanel.js';
 import { createIntro } from './Intro.js';
-import { button } from './dom.js';
+import { button, focusedByPointer } from './dom.js';
 import { toast } from './Toast.js';
 import { YEAR_S } from '../core/constants.js';
 import { fmtDuration } from '../core/units.js';
@@ -182,7 +182,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const presets = ['orbit', 'surface', 'wide', 'front', 'remnant'];
     if (e.code === 'Space') {
-      if (e.target?.closest?.('button, a, [role=button]')) return; // let a focused control handle its own activation
+      if (!focusedByPointer() && e.target?.closest?.('button, a, [role=button]')) return; // a keyboard-focused control handles its own activation; a mouse-clicked one keeps focus but should not swallow Space
       e.preventDefault();
       sim.setTimeMode(sim.timeMode === 'pause' ? sim.resumeMode() : 'pause');
     } else if (e.key >= '1' && e.key <= '5') actions.setCameraPreset(presets[+e.key - 1]);

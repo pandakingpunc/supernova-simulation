@@ -2,7 +2,7 @@
  * Star Library tab: catalogue cards, saved custom stars and the detail card
  * for the selected star (observed data, expected fate, actions).
  */
-import { h, chip, dataRow, button, clear, append } from './dom.js';
+import { h, chip, dataRow, button, clear, append, focusedByPointer } from './dom.js';
 import { STAR_CATALOG, POTENTIAL_LABELS } from '../data/starCatalog.js';
 import { starFromPreset, describeStar } from '../sim/StarFactory.js';
 import { blackbodyRGB, rgbToCss } from '../physics/blackbody.js';
@@ -35,6 +35,7 @@ export function createLibraryPanel(ctx) {
       onClick: () => actions.loadStar(star),
       onKeydown: (e) => {
         if (e.target !== e.currentTarget) return; // keep Enter/Space on the inner Delete button its own
+        if (e.key === ' ' && focusedByPointer()) return; // mouse-focused card: Space stays the global pause hotkey
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); actions.loadStar(star); }
       },
     },

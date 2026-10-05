@@ -3,7 +3,7 @@
  * (click to jump); during a supernova it lists the model's computed events
  * (click to seek the explosion clock).
  */
-import { h, clear } from './dom.js';
+import { h, clear, focusedByPointer } from './dom.js';
 import { fmtTimestamp, fmtYears } from '../core/units.js';
 
 const T_EXP_START = -3; // keep in sync with Simulation.js: the explosion clock cannot go earlier
@@ -13,6 +13,7 @@ function setCurrent(li, on) {
 }
 
 function activateOnKey(e, fn) {
+  if (e.key === ' ' && focusedByPointer()) return; // mouse-focused row: Space stays the global pause hotkey
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
 }
 

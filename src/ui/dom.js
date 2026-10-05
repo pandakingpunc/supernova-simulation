@@ -1,5 +1,16 @@
 /** Tiny DOM helpers so the UI code stays declarative without a framework. */
 
+// Chromium reports :focus-visible as soon as any key is pressed on a mouse-focused button, so track the input modality instead:
+// a control focused by a click keeps focus but should not swallow Space (the global pause hotkey) until the user navigates by keyboard.
+let pointerFocus = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', () => { pointerFocus = true; }, true);
+  window.addEventListener('keydown', (e) => {
+    if (['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) pointerFocus = false;
+  }, true);
+}
+export const focusedByPointer = () => pointerFocus;
+
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
