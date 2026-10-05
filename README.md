@@ -165,7 +165,7 @@ scripts/      physics sanity checks
 | Apparent magnitude | M_bol = 4.74 − 2.5 log₁₀(L/L☉), inverse-square law, approximate bolometric correction |
 | Ozone depletion | ~47% at 8 pc for a canonical supernova (Gehrels et al. 2003), scaled ∝ E / d² |
 | Kill distance | ~8–10 pc (Fields et al. 2020) |
-| Neutrino dose | ~5 Sv at 2.3 AU for a 10⁵³ erg burst, ∝ 1/d² |
+| Neutrino dose | ~5 Sv at 2.3 AU for a 3×10⁵³ erg burst, ∝ 1/d² |
 | Sky positions | Local sidereal time from date and local solar time; Sun on the ecliptic; Moon from its synodic age |
 
 ## License

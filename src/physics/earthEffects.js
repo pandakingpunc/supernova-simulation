@@ -5,12 +5,13 @@
  * The environmental estimates are deliberately simple scalings anchored to
  * published work: ozone depletion from Gehrels et al. (2003), the ~8–10 pc
  * "kill distance" from Fields et al. (2020), neutrino dose from the
- * standard 10⁵³ erg burst. They are order-of-magnitude educational
- * estimates, not predictions.
+ * standard 3×10⁵³ erg burst (~5 Sv at 2.3 AU). They are order-of-magnitude
+ * educational estimates, not predictions.
  */
 import {
   SOLAR_LUMINOSITY_W, SUN_ABS_BOL_MAG, LIGHT_YEAR_M, PARSEC_M, AU_M, FOE,
   MAG_SUN, MAG_FULL_MOON, MAG_VENUS_MAX, MAG_SIRIUS, MAG_DAYTIME_LIMIT, MAG_NAKED_EYE_LIMIT, YEAR_S,
+  NEUTRINO_BURST_ENERGY_J,
 } from '../core/constants.js';
 import { bolometricCorrection } from './stellarModel.js';
 import { clamp } from '../core/math.js';
@@ -18,7 +19,7 @@ import { clamp } from '../core/math.js';
 const SOLAR_CONSTANT = 1361; // W/m²
 const OZONE_REF_PC = 8; // Gehrels et al. 2003: ~47% column depletion at 8 pc for a canonical SN
 const OZONE_REF_FRACTION = 0.47;
-const NEUTRINO_LETHAL_AU = 2.3; // distance where a 10⁵³ erg neutrino burst delivers ~5 Sv
+const NEUTRINO_LETHAL_AU = 2.3; // distance where a 3×10⁵³ erg (3×10⁴⁶ J) neutrino burst delivers ~5 Sv
 
 export const lightTravelYears = (distanceLy) => distanceLy; // by definition of the light-year
 
@@ -78,7 +79,7 @@ export function assessImpact(p, peakL, distanceLy) {
   // Cosmic-ray flux multiplier once the remnant shell reaches the solar system (thousands of years later)
   const cosmicRayFactor = 1 + 30 * Math.pow(10 / dPc, 2) * eRel;
   const ejectaArrivalYr = dM / p.vMax / YEAR_S;
-  const neutrinoDoseSv = p.hasCollapse ? 5 * Math.pow(NEUTRINO_LETHAL_AU / dAU, 2) * (p.Eneutrino / 3e46) : 0;
+  const neutrinoDoseSv = p.hasCollapse ? 5 * Math.pow(NEUTRINO_LETHAL_AU / dAU, 2) * (p.Eneutrino / NEUTRINO_BURST_ENERGY_J) : 0;
 
   let tier;
   if (vsSolar > 1 || neutrinoDoseSv > 1) tier = 'sterilizing';
