@@ -44,7 +44,7 @@ export function createOverlay(ctx) {
       if (earthInfo && earthSnap) {
         lines.push(h('div', { class: 'line big' }, `${snap.star.name} · ${earthInfo.timeLabel} · lat ${earth.state.latitude.toFixed(0)}°`));
         if (earthInfo.mV != null) {
-          lines.push(h('div', { class: 'line' }, `Apparent magnitude ${earthInfo.mV.toFixed(1)}  ·  ${sci(earthInfo.lux)} lux`));
+          lines.push(h('div', { class: 'line' }, `Apparent magnitude ${earthInfo.mV.toFixed(1)}  ·  ${sci(earthInfo.lux)} lux${earthInfo.starUp ? '' : ' (below horizon)'}`));
           lines.push(h('div', { class: 'line dim' }, earthInfo.comparison?.label ?? ''));
         }
         if (earthInfo.starAlt != null) lines.push(h('div', { class: 'line dim' }, `altitude ${earthInfo.starAlt.toFixed(1)}°, azimuth ${earthInfo.starAz.toFixed(0)}° · sky: ${earthInfo.sunAlt > 0 ? 'day' : earthInfo.sunAlt > -18 ? 'twilight' : 'night'} · limiting mag ${earthInfo.mLim.toFixed(1)}`));

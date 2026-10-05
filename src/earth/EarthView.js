@@ -166,7 +166,8 @@ export class EarthView {
       rgb = blackbodyRGB(Tcol);
     }
     const starUp = starPos && starPos.alt > horizonProfile(starPos.az);
-    const snLux = starUp && mV != null ? illuminanceLux(mV) : 0;
+    const sunIsStar = isSun && !earthSnap.sn; // the plain Sun: lit and drawn by the Sun terms, not as a "star"
+    const snLux = starUp && mV != null && !sunIsStar ? illuminanceLux(mV) : 0;
     const sunLevel = smoothstep(-18, -6, sun.alt) * 0.08 + smoothstep(-6, 8, sun.alt) * 0.92;
     const sunUp = sun.alt > -0.8 && !(isSun && earthSnap.sn); // the Sun disc, unless it *is* the supernova
     const snLevel = clamp((Math.log10(snLux + 1e-6) + 1) / 6, 0, 1);
@@ -289,7 +290,7 @@ export class EarthView {
     if (star && starPos) {
       const [x, y, pxPerDeg] = this.project(starPos.az, starPos.alt);
       if (starUp) {
-        if (mV <= mLim + 1.5) {
+        if (!sunIsStar && mV <= mLim + 1.5) {
           const bright = -4 - mV; // >0 once brighter than Venus
           const core = bright > 0 ? 3 + bright * 0.45 : Math.max(1, 1 + (mLim - mV) * 0.35);
           const glowR = bright > 0 ? 10 + bright * 14 : core * 3;
@@ -355,7 +356,7 @@ export class EarthView {
     }
 
     this.info = {
-      mV, lux: snLux, mLim, skyLevel, starAlt: starPos?.alt, starAz: starPos?.az, starUp,
+      mV, lux: mV != null ? illuminanceLux(mV) : null, mLim, skyLevel, starAlt: starPos?.alt, starAz: starPos?.az, starUp,
       sunAlt: sun.alt, moon, moonUp: moonPos.alt > 0, riseHour, isSun,
       comparison: mV != null ? brightnessComparison(mV) : null,
       timeLabel: `${dateLabel(s.dayOfYear, s.year)} ${hourLabel(s.hour)}`,
