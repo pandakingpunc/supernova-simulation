@@ -141,6 +141,7 @@ export class Simulation {
     if (this.phase !== 'supernova') return;
     this.tExp = clamp(t, T_EXP_START, T_EXP_MAX);
     this.cinematicOrigin = 0; // a manual seek restores the normal log clock
+    this.truncateHistory(this.tExp);
     this.emit('seek', this.tExp);
   }
 
@@ -150,6 +151,7 @@ export class Simulation {
     this.stageIndex = clamp(index, 0, this.track.stages.length - 1);
     this.stageProgress = 0;
     this.evolved = true;
+    this.truncateHistory(this.currentAgeYr());
     this.emit('stage', this.stageIndex);
     this.emit('phase', this.phase);
   }
@@ -343,6 +345,15 @@ export class Simulation {
   resetHistory(kind) {
     this.history = { kind, x: [], L: [], R: [], Tc: [], Rs: [] };
     this.historyTimer = HISTORY_INTERVAL;
+  }
+
+  /** Drop chart samples at or after x so a backward seek does not draw a doubled-back trace. */
+  truncateHistory(x) {
+    const h = this.history;
+    if (!h) return;
+    let n = h.x.length;
+    while (n > 0 && h.x[n - 1] >= x) n--;
+    if (n < h.x.length) for (const k of ['x', 'L', 'R', 'Tc', 'Rs']) h[k].length = n;
   }
 
   sampleHistory(dt, snap) {
