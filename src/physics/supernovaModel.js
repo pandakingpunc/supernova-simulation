@@ -25,6 +25,7 @@ import {
   NEUTRON_STAR_RADIUS_M,
 } from '../core/constants.js';
 import { clamp, logLogInterp, smoothstep } from '../core/math.js';
+import { fmtDuration } from '../core/units.js';
 import { predictRemnant, schwarzschildRadius } from './remnants.js';
 
 const LN2 = Math.LN2;
@@ -399,7 +400,7 @@ function buildTimeline(p) {
     add(0, 'Detonation wave launched', 'The burning front races outward through the star.');
   }
   if (bo > 60) add(bo * 0.5, 'Shock halfway through the envelope', 'The surface still shows no sign of what has happened deep inside.');
-  add(bo, 'Shock breakout — first light', `The shock reaches the surface: a ${(p.TBreakout / 1e3).toFixed(0)},000 K flash lasting ~${Math.round(p.tBoDur / 60)} min.`);
+  add(bo, 'Shock breakout — first light', `The shock reaches the surface: a ${(Math.round(p.TBreakout / 1e3) * 1e3).toLocaleString('en-US')} K flash lasting ~${fmtDuration(p.tBoDur, 0)}.`);
   add(bo + p.tBoDur * 4, 'Breakout flash fades', 'The outer layers cool and expand at thousands of km/s.');
   if (p.LPlateau > 0) {
     add(bo + p.tRise * 2, 'Approaching peak brightness', 'The expanding photosphere grows while cooling toward 6,000 K.');
