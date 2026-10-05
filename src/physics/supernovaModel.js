@@ -322,6 +322,8 @@ function stateAt(model, t) {
     const Rinv = Math.pow(Rff, -n) + Math.pow(Rst, -n);
     s.Rshock = Math.pow(Rinv, -1 / n);
     s.vShock = (Math.pow(Rff, -n - 1) * p.vMax + Math.pow(Rst, -n - 1) * vst) / Math.pow(Rinv, (n + 1) / n);
+    // The readout eases from the internal shock speed to the ejecta speed over the breakout duration instead of stepping (R is untouched, so dR/dt = vShock again after tBoDur)
+    s.vShock += (INTERNAL_SHOCK_SPEED - s.vShock) * (1 - smoothstep(0, p.tBoDur, te));
     s.Rej = s.Rshock;
     s.flash = te < p.tBoDur * 4 ? Math.exp(-te / (p.tBoDur * 1.2)) * smoothstep(0, p.tBoDur * 0.3, te) : 0;
     // Photosphere: expands with the inner ejecta, then recedes in mass coordinate after the plateau/peak
