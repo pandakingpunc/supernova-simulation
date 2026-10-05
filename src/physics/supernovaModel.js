@@ -37,6 +37,7 @@ const T_INFALL = 0.05; // s, collapse becomes supersonic
 const T_BOUNCE = 0.25; // s, core reaches nuclear density
 const T_SHOCK_STALL = 0.3; // s
 const T_SHOCK_REVIVAL = 0.5; // s, neutrino heating relaunches the shock
+const R_BOUNCE_M = 3e6 * Math.cbrt(1e9 / 3e14); // m, core radius at bounce density (~3e14 g/cm³) for the infall law below
 
 export const SCENARIO_INFO = {
   'core-collapse': { label: 'Type II core-collapse supernova', natural: true },
@@ -267,17 +268,19 @@ function stateAt(model, t) {
     } else if (t < T_BOUNCE) {
       const f = t / T_BOUNCE; // infall: radius falls roughly as free fall
       const ff = 1 - Math.pow(f, 2.5);
-      s.coreR = Math.max(NEUTRON_STAR_RADIUS_M * 2, 3e6 * ff);
-      s.coreT = 4.5e9 * Math.pow(3e6 / s.coreR, 1.2);
+      s.coreR = Math.max(R_BOUNCE_M, 3e6 * ff);
+      s.coreT = Math.min(3e11, 4.5e9 * Math.pow(3e6 / s.coreR, 1.2)); // reaches the post-bounce start temperature
       s.coreRho = 1e9 * Math.pow(3e6 / s.coreR, 3);
       s.instability = 0.6 + 0.4 * f;
     } else {
       const tb = t - T_BOUNCE;
-      s.coreR = p.remnant.type === 'black-hole'
+      const rBase = p.remnant.type === 'black-hole'
         ? (t < 5 ? NEUTRON_STAR_RADIUS_M * 1.5 : p.remnantRadius)
         : NEUTRON_STAR_RADIUS_M * (1 + 1.5 * Math.exp(-tb / 2)); // proto-NS shrinks as it cools
+      const settle = t < 5 || p.remnant.type !== 'black-hole' ? Math.max(0, R_BOUNCE_M - rBase) * Math.exp(-tb / 0.05) : 0; // carries the infall radius into the proto-NS
+      s.coreR = rBase + settle;
       s.coreT = p.remnant.type === 'black-hole' && t >= 5 ? NaN : logLogInterp(CORE_T_COOLING, Math.max(t, 0.25));
-      s.coreRho = p.remnant.type === 'black-hole' && t >= 5 ? Infinity : 4e14 * (t < 2 ? 0.5 + 0.5 * Math.min(1, tb / 2) : 1);
+      s.coreRho = p.remnant.type === 'black-hole' && t >= 5 ? Infinity : 3e14 + 1e14 * Math.min(1, tb / (2 - T_BOUNCE));
       s.instability = t < 2 ? 1 : 0;
       s.remnantVisible = t > (p.remnant.type === 'black-hole' ? 5 : 2);
     }
