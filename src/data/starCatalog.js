@@ -57,7 +57,7 @@ export const STAR_CATALOG = [
     currentStageKey: 'rsg', stageProgress: 0.9,
     supernovaPotential: 'high',
     supernovaWindow: 'Within ~100,000 years; heavy mass loss may strip it first',
-    blurb: 'One of the largest known stars, shedding its envelope in violent outbursts. Its shock breakout would take more than a day to cross the bloated envelope.',
+    blurb: 'One of the largest known stars, shedding its envelope in violent outbursts. Its shock breakout would take most of a day to cross the bloated envelope.',
   },
   {
     id: 'eta-carinae', name: 'Eta Carinae A', designation: 'η Carinae', constellation: 'Carina',
