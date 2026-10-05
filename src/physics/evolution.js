@@ -187,7 +187,9 @@ export function applyObservedState(track, star) {
     s.start[q] *= ratio;
     s.end[q] *= ratio;
   }
-  // Keep the stage after continuous with the adjusted end (only for R/L/T).
+  // Keep the neighbouring stages continuous with the adjusted start/end (only for R/L/T).
+  const prev = track.stages[idx - 1];
+  if (prev) for (const q of ['R', 'L', 'T']) prev.end[q] = s.start[q];
   const next = track.stages[idx + 1];
   if (next) for (const q of ['R', 'L', 'T']) next.start[q] = s.end[q];
   return { stageIndex: idx, progress: p };
