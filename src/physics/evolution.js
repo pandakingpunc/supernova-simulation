@@ -19,11 +19,18 @@ import { clamp, logLerp, lerp } from '../core/math.js';
 /** Radius (R☉) from luminosity and temperature via Stefan–Boltzmann. */
 const radiusFromLT = (L, T) => Math.sqrt(L) / Math.pow(T / SOLAR_TEFF_K, 2);
 
+const RSG_RMAX = 1500; // R☉: observed red supergiants top out near here (VY CMa ~1420); hotter, yellow hypergiants above
+
 /** Build a state {R, L, T, Tc, rhoc} — provide either R or T with L. */
 function st({ R, L, T, Tc, rhoc }) {
   if (R == null) R = radiusFromLT(L, T);
   if (T == null) T = effectiveTemperature(L, R);
   return { R, L, T, Tc, rhoc };
+}
+
+/** Supergiant state from L and T, with R capped at RSG_RMAX and T following Stefan–Boltzmann when the cap bites. */
+function stCapped({ L, T, Tc, rhoc }) {
+  return radiusFromLT(L, T) > RSG_RMAX ? st({ R: RSG_RMAX, L, Tc, rhoc }) : st({ L, T, Tc, rhoc });
 }
 
 const stage = (key, name, fusion, description, durationYr, displaySec, start, end, extra = {}) => ({
@@ -129,16 +136,16 @@ export function buildEvolutionTrack(star) {
         'The exhausted core contracts while a hydrogen-burning shell drives the envelope outward. The star crosses the Hertzsprung gap in a few thousand years.',
         tauMS * 0.006, 6,
         st({ R: Rms * 1.6, L: Lms * 1.7, Tc: Tc0 * 1.4, rhoc: 30 }),
-        st({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 })));
+        stCapped({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 })));
       stages.push(stage('rsg', 'Red supergiant — core helium burning', 'He → C, O (core)',
         'Helium fuses to carbon and oxygen in the core while the envelope, now hundreds of solar radii across, churns with enormous convection cells.',
         tauMS * 0.1, 9,
-        st({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 }),
-        st({ L: Lpost * 1.4, T: 3550, Tc: 2.5e8, rhoc: 1e4 })));
+        stCapped({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 }),
+        stCapped({ L: Lpost * 1.4, T: 3550, Tc: 2.5e8, rhoc: 1e4 })));
     }
 
     const late = stages[stages.length - 1].end;
-    const keepR = { L: late.L, T: late.T };
+    const keepR = { R: late.R, L: late.L, T: late.T };
     // Each late stage starts from the core state where the previous one ended.
     stages.push(stage('carbon', 'Carbon burning', 'C → Ne, Na, Mg',
       'Carbon ignites in the core. From here on neutrino losses carry away most of the energy, so each stage is dramatically shorter than the last.',
@@ -188,6 +195,16 @@ export function applyObservedState(track, star) {
     const ratio = observed[q] / modelAtP;
     s.start[q] *= ratio;
     s.end[q] *= ratio;
+  }
+  // Rescaling must not push a supergiant stage past RSG_RMAX (e.g. Rigel's hgap end): cap the
+  // offending end and re-solve the other so the model value at progress p still equals the observation.
+  if (s.key === 'hgap' || s.key === 'rsg') {
+    const c = Math.log(Math.max(RSG_RMAX, observed.R));
+    const o = Math.log(observed.R);
+    const a = Math.log(s.start.R);
+    const b = Math.log(s.end.R);
+    if (a > c) { s.start.R = Math.exp(c); s.end.R = Math.exp((o - (1 - p) * c) / p); }
+    else if (b > c) { s.end.R = Math.exp(c); s.start.R = Math.exp((o - p * c) / (1 - p)); }
   }
   // Keep the neighbouring stages continuous with the adjusted start/end (only for R/L/T).
   const prev = track.stages[idx - 1];
