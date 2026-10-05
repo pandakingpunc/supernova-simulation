@@ -49,7 +49,7 @@ export function fmtLengthMeters(m) {
   if (!isFinite(m)) return '—';
   if (m < 1e3) return `${m.toFixed(0)} m`;
   if (m < 1e7) return `${(m / 1e3).toFixed(0)} km`;
-  if (m < SOLAR_RADIUS_M * 5) return `${compact(m / 1e3, 1)} km`;
+  if (m < SOLAR_RADIUS_M * 5) return `${Math.round(m / 1e3).toLocaleString('en-US')} km`;
   if (m < AU_M * 0.5) return `${(m / SOLAR_RADIUS_M).toFixed(1)} R☉`;
   if (m < LIGHT_YEAR_M * 0.05) return `${(m / AU_M).toFixed(2)} AU`;
   if (m < PARSEC_M * 100) return `${(m / LIGHT_YEAR_M).toFixed(2)} ly`;
@@ -59,7 +59,8 @@ export function fmtLengthMeters(m) {
 export function fmtVelocity(mps) {
   if (!isFinite(mps)) return '—';
   if (mps < 1e3) return `${mps.toFixed(0)} m/s`;
-  return `${compact(mps / 1e3, 1)} km/s`;
+  const kms = mps / 1e3;
+  return `${kms < 100 ? kms.toFixed(1) : Math.round(kms).toLocaleString('en-US')} km/s`;
 }
 
 export function fmtEnergy(j) {
