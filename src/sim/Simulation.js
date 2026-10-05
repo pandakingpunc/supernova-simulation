@@ -30,7 +30,7 @@ export const TIME_MODES = {
 };
 
 const SECONDS_PER_DECADE = 5; // wall-clock seconds per decade of explosion time in cinematic mode
-const T_EXP_START = -3; // s before collapse where the explosion clock starts
+export const T_EXP_START = -3; // s before collapse where the explosion clock starts
 const T_EXP_LOG_START = 0.02; // s: below this the cinematic clock runs in real time
 const T_EXP_MAX = 3e13; // ~1 Myr: the remnant has merged with the ISM
 const HISTORY_INTERVAL = 0.12; // s of wall-clock between chart samples

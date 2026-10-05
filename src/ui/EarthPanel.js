@@ -6,8 +6,7 @@ import { h, slider, button, dataRow, setChildren } from './dom.js';
 import { dateLabel, hourLabel, daysInYear } from '../physics/skyMath.js';
 import { fmtYears, fmtDuration } from '../core/units.js';
 import { YEAR_S } from '../core/constants.js';
-
-const T_EXP_START = -3; // s before collapse where the explosion clock starts (keep in sync with Simulation.js)
+import { T_EXP_START } from '../sim/Simulation.js';
 
 export function createEarthPanel(ctx) {
   const { earth, sim, store, actions } = ctx;

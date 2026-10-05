@@ -5,8 +5,7 @@
  */
 import { h, clear, focusedByPointer } from './dom.js';
 import { fmtTimestamp, fmtYears } from '../core/units.js';
-
-const T_EXP_START = -3; // keep in sync with Simulation.js: the explosion clock cannot go earlier
+import { T_EXP_START } from '../sim/Simulation.js';
 
 function setCurrent(li, on) {
   if (on) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
