@@ -61,13 +61,13 @@ export const STAR_CATALOG = [
   },
   {
     id: 'eta-carinae', name: 'Eta Carinae A', designation: 'η Carinae', constellation: 'Carina',
-    type: 'LBV (O-type hypergiant)', mass: 100, massRange: '90–120', radius: 240, radiusRange: '60–800',
+    type: 'LBV (O-type hypergiant)', mass: 100, massRange: '90–120', radius: 80, radiusRange: '60–800',
     temperature: 30000, luminosity: 4.6e6, ageYr: 3e6, ageRange: '2–3 Myr',
     distanceLy: 7500, ra: 10.751, dec: -59.684, metallicity: 0.0134, rotation: 0.4,
     currentStageKey: 'lbv', stageProgress: 0.5,
     supernovaPotential: 'high',
     supernovaWindow: 'Possibly within the next ~100,000 years; a candidate for a pair-instability-like or stripped-envelope event',
-    blurb: 'A luminous blue variable that ejected ~20 M☉ in the Great Eruption of 1843. The radius is ill-defined because its wind is optically thick.',
+    blurb: 'A luminous blue variable that ejected ~20 M☉ in the Great Eruption of 1843. The radius is ill-defined because its wind is optically thick; the 80 R☉ listed is the effective (Stefan–Boltzmann) radius for 30,000 K and 4.6×10⁶ L☉.',
   },
   {
     id: 'sirius', name: 'Sirius A', designation: 'α Canis Majoris A', constellation: 'Canis Major',
