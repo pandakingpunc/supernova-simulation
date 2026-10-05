@@ -58,7 +58,8 @@ export function spectralType(T) {
     if (T >= lo && T < hi) {
       // subtype 0 (hottest) .. 9 (coolest) across the class, spaced in log T
       const f = (Math.log(hi) - Math.log(T)) / (Math.log(hi) - Math.log(lo));
-      return `${cls}${Math.min(9, Math.floor(f * 10))}`;
+      const sub = Math.min(9, Math.floor(f * 10));
+      return cls === 'O' ? `O${Math.max(2, sub)}` : `${cls}${sub}`; // MK O subtypes start at O2 (O0/O1 are not in use)
     }
   }
   return 'M9';
