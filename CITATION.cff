@@ -29,6 +29,9 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.22844443
     description: "Version 1.0.0"
+  - type: doi
+    value: 10.5281/zenodo.23169816
+    description: "Version 1.1.0"
 repository-code: "https://github.com/pandakingpunc/supernova-simulation"
 url: "https://pandakingpunc.github.io/supernova-simulation/"
 keywords:

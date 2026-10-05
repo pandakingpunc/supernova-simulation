@@ -191,9 +191,9 @@ Zenodo. GitHub also offers a *Cite this repository* button that reads [`CITATION
 }
 ```
 
-The concept DOI 10.5281/zenodo.22844442 always resolves to the latest version; version 1.0.0 is
-10.5281/zenodo.22844443. Release notes are kept in [`CHANGELOG.md`](CHANGELOG.md); Zenodo metadata is in
-[`.zenodo.json`](.zenodo.json).
+The concept DOI 10.5281/zenodo.22844442 always resolves to the latest version; version 1.1.0 is
+10.5281/zenodo.23169816 and version 1.0.0 is 10.5281/zenodo.22844443. Release notes are kept in
+[`CHANGELOG.md`](CHANGELOG.md); Zenodo metadata is in [`.zenodo.json`](.zenodo.json).
 
 ## Acknowledgements
 
