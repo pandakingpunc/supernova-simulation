@@ -24,6 +24,7 @@ import { createComparePanel } from './ComparePanel.js';
 import { createIntro } from './Intro.js';
 import { toast } from './Toast.js';
 import { YEAR_S } from '../core/constants.js';
+import { fmtDuration } from '../core/units.js';
 
 const UI_UPDATE_INTERVAL = 0.1; // s
 const LOW_FPS_THRESHOLD = 26;
@@ -105,7 +106,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
       sim.seek(origin - 3); // 3 s of the old star, then Earth sees the collapse unfold
       sim.cinematicOrigin = origin; // after seek(), which resets it
       sim.setTimeMode('cinematic');
-      toast(`Jumped ${(sim.star.distanceLy).toFixed(0)} years ahead: the light has just reached Earth. Near the star, the remnant is already that old.`);
+      toast(`Jumped ${fmtDuration(origin)} ahead: the light has just reached Earth. Near the star, the remnant is already that old.`);
     },
     seek(t) { sim.seek(t); if (sim.timeMode === 'pause') sim.setTimeMode('cinematic'); },
     seekStage(i) { sim.seekStage(i); },
