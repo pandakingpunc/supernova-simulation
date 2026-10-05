@@ -132,10 +132,10 @@ input[type='text'] { background: rgba(255,255,255,0.05); border: 1px solid var(-
 .star-card:focus-visible, .timeline li:focus-visible, .tab:focus-visible, .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .star-card.active { border-color: rgba(124,199,255,0.55); background: rgba(124,199,255,0.08); }
 .star-dot { width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 14px 2px var(--dot, #fff); background: var(--dot, #fff); justify-self: center; }
-.star-card .name { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.star-card .name { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; overflow-wrap: anywhere; }
 .star-card .meta { color: var(--text-dim); font-size: 11px; margin-top: 2px; font-family: var(--mono); }
 .star-detail { margin-top: 4px; }
-.star-detail h4 { margin: 8px 0 4px; font-size: 15px; font-weight: 600; }
+.star-detail h4 { margin: 8px 0 4px; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .star-detail .designation { color: var(--text-dim); font-size: 11.5px; }
 
 /* ---------- science panel ---------- */
