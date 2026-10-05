@@ -3,9 +3,8 @@
  * banner), scale bar, FPS and the Earth View status block.
  */
 import { h, button, setChildren } from './dom.js';
-import { fmtLengthMeters, fmtDuration, fmtYears, fmtDistanceLy, sci } from '../core/units.js';
+import { fmtLengthMeters, fmtDuration, fmtDistanceLy, sci } from '../core/units.js';
 import { CAMERA_PRESETS } from '../render/CameraRig.js';
-import { YEAR_S } from '../core/constants.js';
 
 export function createOverlay(ctx) {
   const { store, scene, earth, actions } = ctx;
@@ -52,7 +51,7 @@ export function createOverlay(ctx) {
           const t = earthSnap.retardedT;
           lines.push(h('div', { class: 'line' }, `Earth sees: ${earthSnap.sn.phase.name} (light emitted ${fmtDuration(t)} after collapse)`));
         } else if (earthSnap.lightArrived === false) {
-          lines.push(h('div', { class: 'line' }, `Earth still sees the pre-explosion star — light arrives in ${fmtYears(earthSnap.arrivalIn / YEAR_S)}`));
+          lines.push(h('div', { class: 'line' }, `Earth still sees the pre-explosion star — light arrives in ${fmtDuration(Math.max(0, earthSnap.arrivalIn))}`));
         }
       }
       setChildren(earthStatus, ...lines);

@@ -372,7 +372,7 @@ export class Simulation {
       return {
         phase: 'evolution', star: this.star, tExp: null, retardedT: tRet, lightArrived: false,
         R: cs.R, L: cs.L, T: cs.T, color: blackbodyRGB(cs.T), sn: null, model: this.model,
-        arrivalIn: -tRet,
+        arrivalIn: T_EXP_START - tRet, // star-frame seconds until the light arrives (same threshold as lightArrived)
       };
     }
     return { ...this.supernovaSnapshot(tRet), retardedT: tRet, lightArrived: true };
