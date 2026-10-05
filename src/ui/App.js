@@ -163,9 +163,11 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
 
   // ---- keyboard ----
   window.addEventListener('keydown', (e) => {
-    if (e.target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.target && (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const presets = ['orbit', 'surface', 'wide', 'front', 'remnant'];
     if (e.code === 'Space') {
+      if (e.target?.closest?.('button, a, [role=button]')) return; // let a focused control handle its own activation
       e.preventDefault();
       sim.setTimeMode(sim.timeMode === 'pause' ? sim.resumeMode() : 'pause');
     } else if (e.key >= '1' && e.key <= '5') actions.setCameraPreset(presets[+e.key - 1]);
