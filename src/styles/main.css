@@ -222,15 +222,26 @@ input[type='text'] { background: rgba(255,255,255,0.05); border: 1px solid var(-
   :root { --left-w: 290px; --right-w: 300px; }
 }
 @media (max-width: 900px) {
-  .ui-layer { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto auto; }
+  .ui-layer { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; }
   .topbar { flex-wrap: wrap; row-gap: 6px; padding: 6px 10px; }
   .topbar .spacer { display: none; }
-  .left-panel { grid-row: 2; grid-column: 1; max-height: 42vh; }
-  .right-panel { grid-row: 3; grid-column: 1; max-height: 34vh; }
-  .center-overlay { grid-row: 2 / 4; grid-column: 1; }
-  .bottombar { grid-row: 4; grid-template-columns: 1fr; gap: 6px; padding: 6px 10px; }
+  .left-panel { grid-row: 3; grid-column: 1; max-height: 42vh; }
+  .right-panel { grid-row: 4; grid-column: 1; max-height: 34vh; }
+  /* the HUD / Earth status text gets its own row instead of floating over the panels */
+  .center-overlay { grid-row: 2; grid-column: 1; min-height: auto; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 14px; }
+  .center-overlay .hud, .center-overlay .earth-status, .center-overlay .scale-bar, .center-overlay .fps { position: static; max-width: none; }
+  .center-overlay .hud { flex: 1 1 100%; flex-wrap: wrap; gap: 6px; }
+  .center-overlay .earth-status { flex: 1 1 100%; }
+  .center-overlay .scale-bar i { width: 80px; }
+  .bottombar { grid-row: 5; grid-template-columns: 1fr; gap: 6px; padding: 6px 10px; }
   .time-controls { flex-wrap: wrap; justify-content: center; }
   .actions { justify-content: center; flex-wrap: wrap; }
   .brand-sub, .topbar .hint { display: none; }
-  .compare-panel { grid-row: 2 / 4; grid-column: 1; }
+  /* Compare brings its own star pickers: give it the room the side panels would take */
+  .compare-panel { grid-row: 3 / 5; grid-column: 1; }
+  body[data-view='compare'] .left-panel, body[data-view='compare'] .right-panel { display: none; }
+}
+@media (max-width: 600px) {
+  /* Earth View's sliders live in the left panel: leave it the height the Science panel would take */
+  body[data-view='earth'] .right-panel { display: none; }
 }
