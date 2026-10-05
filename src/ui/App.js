@@ -101,8 +101,9 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     jumpToLightArrival() {
       if (sim.phase !== 'supernova') return;
       // Restart the log clock from the moment of arrival so Earth watches the explosion unfold.
-      sim.cinematicOrigin = sim.lightDelaySeconds();
-      sim.seek(sim.cinematicOrigin - 3); // 3 s of the old star, then Earth sees the collapse unfold
+      const origin = sim.lightDelaySeconds();
+      sim.seek(origin - 3); // 3 s of the old star, then Earth sees the collapse unfold
+      sim.cinematicOrigin = origin; // after seek(), which resets it
       sim.setTimeMode('cinematic');
       toast(`Jumped ${(sim.star.distanceLy).toFixed(0)} years ahead: the light has just reached Earth. Near the star, the remnant is already that old.`);
     },

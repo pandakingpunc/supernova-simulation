@@ -140,6 +140,7 @@ export class Simulation {
   seek(t) {
     if (this.phase !== 'supernova') return;
     this.tExp = clamp(t, T_EXP_START, T_EXP_MAX);
+    this.cinematicOrigin = 0; // a manual seek restores the normal log clock
     this.emit('seek', this.tExp);
   }
 
