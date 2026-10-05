@@ -73,6 +73,7 @@ export class Simulation {
     this.stageIndex = pos.stageIndex;
     this.stageProgress = pos.progress;
     this.trackAgeAtLoad = this.track.stages[pos.stageIndex].startYr + this.track.stages[pos.stageIndex].durationYr * pos.progress;
+    this.ageOffsetYr = star.ageYr - this.trackAgeAtLoad;
     this.phase = 'evolution';
     this.model = null;
     this.forced = false;
@@ -150,8 +151,11 @@ export class Simulation {
     this.phase = 'evolution';
     this.stageIndex = clamp(index, 0, this.track.stages.length - 1);
     this.stageProgress = 0;
+    const reanchored = this.ageOffsetYr !== 0;
+    this.ageOffsetYr = 0; // re-anchor the age to the track so an earlier stage never reads a negative age
     this.evolved = true;
-    this.truncateHistory(this.currentAgeYr());
+    if (reanchored) this.resetHistory('evolution'); // old samples used the previous age anchor
+    else this.truncateHistory(this.currentAgeYr());
     this.emit('stage', this.stageIndex);
     this.emit('phase', this.phase);
   }
@@ -250,7 +254,7 @@ export class Simulation {
   currentAgeYr() {
     const s = this.track.stages[this.stageIndex];
     const trackAge = s.startYr + s.durationYr * this.stageProgress;
-    return this.star.ageYr + (trackAge - this.trackAgeAtLoad);
+    return Math.max(0, trackAge + this.ageOffsetYr);
   }
 
   currentEvolutionState() {
