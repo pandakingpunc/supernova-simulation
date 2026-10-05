@@ -6,7 +6,7 @@
 import { h, dataRow, chip, setChildren, append } from './dom.js';
 import { Chart } from './Chart.js';
 import { CoreMonitor } from './CoreMonitor.js';
-import { sci, fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtDensity, fmtDuration, fmtYears, fmtVelocity, fmtEnergy, fmtLengthMeters, fmtDistanceLy } from '../core/units.js';
+import { sci, fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtDensity, fmtDuration, fmtYears, fmtSpanYears, fmtVelocity, fmtEnergy, fmtLengthMeters, fmtDistanceLy } from '../core/units.js';
 import { SOLAR_RADIUS_M, SOLAR_LUMINOSITY_W, YEAR_S } from '../core/constants.js';
 import { REMNANT_INFO, spinPeriodAt } from '../physics/remnants.js';
 
@@ -86,8 +86,8 @@ export function createSciencePanel(ctx) {
       list.push(dataRow('Core density', fmtDensity(snap.rhoc), 'Estimated'));
       list.push(dataRow('Mass', fmtSolarMass(snap.phase === 'ended' && snap.remnant ? snap.remnant.mass : snap.mass), tag));
       if (snap.phase === 'evolution') {
-        list.push(dataRow('Stage duration', fmtYears(snap.stage.durationYr), 'Estimated'));
-        list.push(dataRow('Time to end of life', fmtYears(Math.max(0, snap.track.totalLifetimeYr - (snap.stage.startYr + snap.stage.durationYr * snap.stageProgress))), 'Estimated'));
+        list.push(dataRow('Stage duration', fmtSpanYears(snap.stage.durationYr), 'Estimated'));
+        list.push(dataRow('Time to end of life', fmtSpanYears(Math.max(0, snap.track.totalLifetimeYr - (snap.stage.startYr + snap.stage.durationYr * snap.stageProgress))), 'Estimated'));
       }
       if (snap.nebulaAgeS > 0) list.push(dataRow('Nebula age', fmtDuration(snap.nebulaAgeS), 'Simulation'));
     }

@@ -4,7 +4,7 @@
  * (click to seek the explosion clock).
  */
 import { h, clear, focusedByPointer } from './dom.js';
-import { fmtTimestamp, fmtYears } from '../core/units.js';
+import { fmtTimestamp, fmtYears, fmtSpanYears } from '../core/units.js';
 import { T_EXP_START } from '../sim/Simulation.js';
 
 function setCurrent(li, on) {
@@ -55,7 +55,7 @@ export function createTimelinePanel(ctx) {
         const seek = () => actions.seekStage(i);
         const li = h('li', { role: 'button', tabindex: '0', onClick: seek, onKeydown: (e) => activateOnKey(e, seek) },
           h('span', { class: 't' }, fmtYears(s.startYr)),
-          h('div', {}, h('div', { class: 'title' }, s.name), h('div', { class: 'detail' }, `${s.fusion} · lasts ${fmtYears(s.durationYr)}`)),
+          h('div', {}, h('div', { class: 'title' }, s.name), h('div', { class: 'detail' }, `${s.fusion} · lasts ${fmtSpanYears(s.durationYr)}`)),
         );
         items.push({ li, index: i });
         list.append(li);

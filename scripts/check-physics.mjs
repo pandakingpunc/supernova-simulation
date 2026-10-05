@@ -9,7 +9,7 @@ import { buildSupernovaModel, determineScenario } from '../src/physics/supernova
 import { apparentMagnitudes, assessImpact } from '../src/physics/earthEffects.js';
 import { classify, spectralType } from '../src/physics/stellarModel.js';
 import { altAz, localSiderealTime, sunRaDec, moonApprox, daysInYear, dateLabel, hourLabel } from '../src/physics/skyMath.js';
-import { fmtDuration, sci, fmtYears, fmtKelvin, fmtSolarLum, fmtVelocity, fmtLengthMeters, fmtTimestamp, compact } from '../src/core/units.js';
+import { fmtDuration, sci, fmtYears, fmtSpanYears, fmtKelvin, fmtSolarLum, fmtVelocity, fmtLengthMeters, fmtTimestamp, compact } from '../src/core/units.js';
 import { DAY_S, YEAR_S, HOUR_S, FOE, AU_M, LIGHT_YEAR_M, NEUTRINO_BURST_ENERGY_J, SOLAR_TEFF_K } from '../src/core/constants.js';
 import { Simulation } from '../src/sim/Simulation.js';
 import { starFromPreset, buildCustomStar, describeStar } from '../src/sim/StarFactory.js';
@@ -109,6 +109,7 @@ for (let e = -7; e <= 17; e += 0.037) {
 for (const [s, want] of [[59.96, '1.0 min'], [0.9996, '1.0 s'], [3599.9, '1.0 h'], [86399, '1.0 d'], [0.0009996, '1 ms']]) {
   check(fmtDuration(s) === want, `fmtDuration(${s}) = '${fmtDuration(s)}', expected '${want}'`);
 }
+check(fmtSpanYears(0.0027) === '23.7 h' && fmtSpanYears(7e6) === '7.0 Myr', `fmtSpanYears sub-year/regular: ${fmtSpanYears(0.0027)} ${fmtSpanYears(7e6)}`);
 check(fmtYears(999.6) === '1.0 kyr', `fmtYears(999.6) = ${fmtYears(999.6)}`);
 check(fmtYears(999960) === '1.0 Myr', `fmtYears(999960) = ${fmtYears(999960)}`);
 check(compact(999999) === '1.00 M', `compact(999999) = ${compact(999999)}`);

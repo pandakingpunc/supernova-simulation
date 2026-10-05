@@ -93,6 +93,9 @@ export function fmtYears(y, digits = 1) {
   return `${sci(abs, 1)} yr`;
 }
 
+/** Span of years for readouts: sub-year spans (the last burning stages last days or hours) read in d/h/min instead of "0.0 yr". */
+export const fmtSpanYears = (y) => (y > 0 && y < 0.05 ? fmtDuration(y * YEAR_S) : fmtYears(y));
+
 /** Timeline stamp used in the event log. */
 export function fmtTimestamp(s) {
   if (s < 0) return `−${fmtDuration(-s)}`;

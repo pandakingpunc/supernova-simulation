@@ -6,7 +6,7 @@
 import { h, slider, button, dataRow, chip, setChildren } from './dom.js';
 import { buildCustomStar, describeStar } from '../sim/StarFactory.js';
 import { blackbodyRGB, rgbToCss } from '../physics/blackbody.js';
-import { fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtYears, fmtDistanceLy } from '../core/units.js';
+import { fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtYears, fmtSpanYears, fmtDistanceLy } from '../core/units.js';
 import { SOLAR_METALLICITY } from '../core/constants.js';
 
 export function createBuilderPanel(ctx) {
@@ -78,7 +78,7 @@ export function createBuilderPanel(ctx) {
       dataRow('Luminosity', fmtSolarLum(star.luminosity), 'Simulation'),
       dataRow('Current stage', preview.currentStage.name, 'Simulation'),
       dataRow('Total lifetime', fmtYears(preview.lifetimeYr), 'Estimated'),
-      dataRow('Time remaining', fmtYears(preview.remainingYr), 'Estimated'),
+      dataRow('Time remaining', fmtSpanYears(preview.remainingYr), 'Estimated'),
       dataRow('Apparent magnitude', preview.apparentMagnitude.toFixed(1), 'Estimated'),
       dataRow('Fate', preview.terminal, 'Estimated'),
       dataRow('Final state', preview.remnant.name, 'Estimated'),
