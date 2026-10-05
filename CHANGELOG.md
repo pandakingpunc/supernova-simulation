@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-05
 
 ### Changed
 - Red-supergiant radius is capped at 1500 R☉ (luminosity kept, temperature from Stefan–Boltzmann);
@@ -62,4 +62,5 @@ First public release.
 - Physics sanity-check script (`npm run check:physics`) and GitHub Pages deployment workflow.
 - Citation metadata (`CITATION.cff`, `.zenodo.json`) for archiving on Zenodo.
 
+[1.1.0]: https://github.com/pandakingpunc/supernova-simulation/releases/tag/v1.1.0
 [1.0.0]: https://github.com/pandakingpunc/supernova-simulation/releases/tag/v1.0.0

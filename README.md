@@ -183,7 +183,7 @@ Zenodo. GitHub also offers a *Cite this repository* button that reads [`CITATION
 @software{karatum_supernova_simulation_2026,
   author    = {Karatum, Mustafa},
   title     = {Supernova Simulation},
-  version   = {1.0.0},
+  version   = {1.1.0},
   year      = {2026},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.22844442},
