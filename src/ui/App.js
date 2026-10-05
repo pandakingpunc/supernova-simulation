@@ -167,8 +167,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     const presets = ['orbit', 'surface', 'wide', 'front', 'remnant'];
     if (e.code === 'Space') {
       e.preventDefault();
-      if (sim.timeMode === 'pause') sim.setTimeMode(sim.phase === 'supernova' ? 'cinematic' : sim.lastPlayMode ?? 'evolution');
-      else { sim.lastPlayMode = sim.timeMode; sim.setTimeMode('pause'); }
+      sim.setTimeMode(sim.timeMode === 'pause' ? sim.resumeMode() : 'pause');
     } else if (e.key >= '1' && e.key <= '5') actions.setCameraPreset(presets[+e.key - 1]);
     else if (e.key === 'h' || e.key === 'H') actions.toggleUI();
     else if (e.key === 'e' || e.key === 'E') actions.setView('earth');

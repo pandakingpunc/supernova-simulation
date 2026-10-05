@@ -42,6 +42,7 @@ export class Simulation {
     this.star = null;
     this.phase = 'idle';
     this.timeMode = 'pause';
+    this.lastPlayMode = null; // last non-pause mode, restored by resumeMode()
     this.speed = 1;
     this.tExp = T_EXP_START;
     this.cinematicOrigin = 0;
@@ -82,6 +83,7 @@ export class Simulation {
     this.evolved = false;
     this.postAgeS = 0;
     this.timeMode = 'pause';
+    this.lastPlayMode = null;
     this.resetHistory('evolution');
     this.eventLog = [{
       ageYr: star.ageYr, key: 'load', title: `${star.name} loaded`, stageIndex: pos.stageIndex,
@@ -96,7 +98,18 @@ export class Simulation {
     if (mode === 'evolution' && this.phase !== 'evolution') return;
     if (mode === 'cinematic' && this.phase !== 'supernova') return;
     this.timeMode = mode;
+    if (mode !== 'pause') this.lastPlayMode = mode;
     this.emit('timeMode', mode);
+  }
+
+  /** Mode to continue with after a pause: the last one if it still fits the phase, else a sensible default. */
+  resumeMode() {
+    const m = this.lastPlayMode;
+    const valid = m && m !== 'pause'
+      && (m !== 'evolution' || this.phase === 'evolution')
+      && (m !== 'cinematic' || this.phase === 'supernova');
+    if (valid) return m;
+    return this.phase === 'supernova' ? 'cinematic' : this.phase === 'ended' ? 'x1000' : 'evolution';
   }
 
   setSpeed(s) { this.speed = clamp(s, 0.25, 4); }
@@ -134,6 +147,7 @@ export class Simulation {
     this.tExp = T_EXP_START;
     this.cinematicOrigin = 0;
     this.timeMode = 'cinematic';
+    this.lastPlayMode = 'cinematic';
     this.resetHistory('supernova');
     this.emit('supernova', this.model);
     this.emit('phase', this.phase);
@@ -236,6 +250,7 @@ export class Simulation {
       this.remnant = predictRemnant({ mass: this.star.mass, metallicity: this.star.metallicity, rotation: this.star.rotation });
       this.postAgeS = 0;
       this.timeMode = 'x1000';
+      this.lastPlayMode = 'x1000';
       this.eventLog.push({ ageYr: this.currentAgeYr(), key: 'end', title: `${this.remnant.name} formed`, detail: 'The star has reached the end of its life without a supernova.' });
       this.emit('ended', this.remnant);
       this.emit('phase', this.phase);
