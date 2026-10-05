@@ -192,13 +192,14 @@ export function luminosityAt(p, t) {
   return Math.max(L, 1e20);
 }
 
-/** Optical peak: the maximum after the breakout flash has faded (from 1.5 days to 2 years). */
+/** Optical peak: the maximum of the plateau/radioactive light curve (1.5 days to 2 years), excluding the breakout flash and its shock-cooling tail. */
 function findPeak(p) {
+  const q = { ...p, LBreakout: 0 };
   let best = { t: p.tBreakout, L: 0 };
   const tStart = Math.max(1.5 * DAY_S, p.tBoDur * 8);
   for (let i = 0; i <= 300; i++) {
     const t = p.tBreakout + tStart * Math.pow(10, (i / 300) * Math.log10((YEAR_S * 2) / tStart));
-    const L = luminosityAt(p, t);
+    const L = luminosityAt(q, t);
     if (L > best.L) best = { t, L };
   }
   return best;
