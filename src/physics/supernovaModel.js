@@ -251,7 +251,8 @@ function stateAt(model, t) {
     Enu: p.hasCollapse && t > T_BOUNCE ? p.Eneutrino * (1 - Math.exp(-(t - T_BOUNCE) / NEUTRINO_BURST_TIMESCALE_S)) : 0,
     Ekin: 0,
     flash: 0,
-    instability: 0,
+    instability: 0, // surface shudder
+    coreInstability: 0,
     ejectaVisible: false,
     ejectaAge: 0,
     remnantVisible: false,
@@ -260,6 +261,9 @@ function stateAt(model, t) {
     Rshock: 0, vShock: 0, Rphot: p.Rstar, Tcolor: p.Tstar, Mbound: p.Mtotal,
     Rej: 0,
   };
+
+  // The pre-collapse shudder fades out as the core goes dark; the core's own state is coreInstability.
+  if (t >= 0 && t < T_BOUNCE) s.instability = 0.6 * (1 - t / T_BOUNCE);
 
   // ---- Core ----
   if (p.hasCollapse) {
@@ -271,7 +275,7 @@ function stateAt(model, t) {
       s.coreR = Math.max(R_BOUNCE_M, 3e6 * ff);
       s.coreT = Math.min(3e11, 4.5e9 * Math.pow(3e6 / s.coreR, 1.2)); // reaches the post-bounce start temperature
       s.coreRho = 1e9 * Math.pow(3e6 / s.coreR, 3);
-      s.instability = 0.6 + 0.4 * f;
+      s.coreInstability = 0.6 + 0.4 * f;
     } else {
       const tb = t - T_BOUNCE;
       const rBase = p.remnant.type === 'black-hole'
@@ -281,13 +285,13 @@ function stateAt(model, t) {
       s.coreR = rBase + settle;
       s.coreT = p.remnant.type === 'black-hole' && t >= 5 ? NaN : logLogInterp(CORE_T_COOLING, Math.max(t, 0.25));
       s.coreRho = p.remnant.type === 'black-hole' && t >= 5 ? Infinity : 3e14 + 1e14 * Math.min(1, tb / (2 - T_BOUNCE));
-      s.instability = t < 2 ? 1 : 0;
+      s.coreInstability = t < 2 ? 1 : 0;
       s.remnantVisible = t > (p.remnant.type === 'black-hole' ? 5 : 2);
     }
   } else {
     // Thermonuclear / pair instability: no compact core; a detonation wave sweeps the star.
     if (t < 0) s.instability = clamp(1 + t / (HOUR_S * 2), 0, 1) * 0.6;
-    else { s.coreT = t < 3 ? 6e9 : 1e9; s.coreRho = t < 3 ? 2e9 : 1e6; s.instability = t < 3 ? 1 : 0; }
+    else { s.coreT = t < 3 ? 6e9 : 1e9; s.coreRho = t < 3 ? 2e9 : 1e6; s.coreInstability = t < 3 ? 1 : 0; }
     s.coreR = t < 3 ? 5e6 : 0;
   }
 
@@ -300,7 +304,7 @@ function stateAt(model, t) {
     s.breakoutProgress = frac;
     s.Ekin = p.E * Math.pow(frac, 1.2);
     s.Mbound = p.Mtotal - (p.Mej) * Math.pow(frac, 1.5);
-    s.instability = Math.max(s.instability, 0.3 + 0.7 * Math.pow(frac, 3)); // surface shudders only as the shock nears it
+    s.instability = Math.max(s.instability, 0.7 * Math.pow(frac, 3)); // surface shudders only as the shock nears it
   } else if (t >= p.tBreakout) {
     const te = t - p.tBreakout;
     s.ejectaVisible = true;
