@@ -122,7 +122,10 @@ export class CameraRig {
     return 2 * this.distance() * Math.tan((this.camera.fov * Math.PI) / 360) * aspect * SOLAR_RADIUS_M;
   }
 
-  dispose() { this.controls.dispose(); }
+  dispose() {
+    this.domElement.removeEventListener('wheel', this.onWheel);
+    this.controls.dispose();
+  }
 }
 
 export { THREE };

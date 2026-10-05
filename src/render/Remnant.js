@@ -154,4 +154,11 @@ export class Remnant {
       this.glow.scale.setScalar(radius * 6);
     }
   }
+
+  dispose() {
+    this.group.traverse((o) => {
+      o.geometry?.dispose();
+      o.material?.dispose();
+    });
+  }
 }

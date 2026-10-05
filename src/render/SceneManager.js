@@ -132,6 +132,7 @@ export class SceneManager {
     this.star.dispose();
     this.ejecta.dispose();
     this.shock.dispose();
+    this.remnant.dispose();
     this.starfield.dispose();
     this.composer.dispose();
     this.renderer.dispose();
