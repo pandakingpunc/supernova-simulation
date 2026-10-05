@@ -190,7 +190,7 @@ export function luminosityAt(p, t) {
   const trapping = 1 - Math.exp(-Math.pow(p.tGamma / Math.max(te, 1), 2)); // gamma rays leak out late
   L += decayPower(p.MNi * SOLAR_MASS_KG, te) * diffusion * trapping;
   // 4) pulsar wind nebula / compact object at very late times
-  L += p.pulsarLum / Math.pow(1 + te / (1000 * YEAR_S), 2);
+  L += p.pulsarLum * smoothstep(0, p.tBoDur * 0.35, te) / Math.pow(1 + te / (1000 * YEAR_S), 2); // switched on with the breakout flash so L is continuous
   // 5) the progenitor's own light fades into the flash rather than vanishing at breakout
   L += p.Lstar * Math.exp(-te / p.tBoDur);
   return Math.max(L, 1e20);
