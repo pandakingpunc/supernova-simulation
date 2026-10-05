@@ -323,7 +323,7 @@ function stateAt(model, t) {
   } else {
     s.Tcolor = p.Tstar;
   }
-  s.remnantVisible = s.remnantVisible && s.ejectaVisible ? true : s.remnantVisible;
+  if (!p.hasCollapse) s.remnantVisible = s.ejectaVisible; // total disruption: the card appears once the ejecta are released
 
   // ---- Phase label ----
   s.phase = phaseAt(p, t);
