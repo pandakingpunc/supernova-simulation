@@ -67,15 +67,16 @@ export function buildEvolutionTrack(star) {
     const Lrgb = Math.max(2500, 4 * Lms);
     const Lagb = Lrgb * 2.5;
     const heL = M < 2 ? 60 : Lrgb * 0.5;
+    const TcMsEnd = 2e7 * Math.pow(M, 0.2);
     stages.push(stage('ms', 'Main sequence', 'H → He (core)',
       'Core hydrogen fusion. The star brightens slowly as helium ash accumulates and the core contracts.',
       tauMS, 10,
       st({ R: Rms, L: Lms, Tc: 1.4e7 * Math.pow(M, 0.2), rhoc: 100 }),
-      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: 2e7 * Math.pow(M, 0.2), rhoc: 200 })));
+      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: TcMsEnd, rhoc: 200 })));
     stages.push(stage('subgiant', 'Subgiant — hydrogen shell burning', 'H → He (shell)',
       'The core is now inert helium. Hydrogen burns in a shell around it while the core contracts and the envelope begins to expand.',
       tauMS * 0.03, 5,
-      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: 2e7, rhoc: 200 }),
+      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: TcMsEnd, rhoc: 200 }),
       st({ R: Rms * 3.5, L: Lms * 2.5, Tc: 5e7, rhoc: 1e4 })));
     stages.push(stage('rgb', 'Red giant branch', 'H → He (shell)',
       'The envelope swells to over a hundred solar radii and cools to ~3,700 K while the helium core keeps contracting.',
@@ -138,10 +139,11 @@ export function buildEvolutionTrack(star) {
 
     const late = stages[stages.length - 1].end;
     const keepR = { L: late.L, T: late.T };
+    // Each late stage starts from the core state where the previous one ended.
     stages.push(stage('carbon', 'Carbon burning', 'C → Ne, Na, Mg',
       'Carbon ignites in the core. From here on neutrino losses carry away most of the energy, so each stage is dramatically shorter than the last.',
       clamp(1200 * Math.pow(15 / M, 1.5), 50, 3000), 5,
-      st({ ...keepR, Tc: 6e8, rhoc: 1e5 }), st({ ...keepR, Tc: 9e8, rhoc: 1e6 })));
+      st({ ...keepR, Tc: late.Tc, rhoc: late.rhoc }), st({ ...keepR, Tc: 9e8, rhoc: 1e6 })));
     if (isPISN) {
       stages.push(stage('pair-instability', 'Pair instability', 'O → Si (runaway)',
         'In the 140–260 M☉ window the core becomes so hot that photons turn into electron–positron pairs, removing pressure support and triggering a runaway collapse and explosive oxygen burning.',
@@ -152,15 +154,15 @@ export function buildEvolutionTrack(star) {
       stages.push(stage('neon', 'Neon burning', 'Ne → O, Mg',
         'Neon photodisintegrates and burns in a phase lasting about a year.',
         1.2, 4,
-        st({ ...keepR, Tc: 1.2e9, rhoc: 4e6 }), st({ ...keepR, Tc: 1.6e9, rhoc: 8e6 })));
+        st({ ...keepR, Tc: 9e8, rhoc: 1e6 }), st({ ...keepR, Tc: 1.6e9, rhoc: 8e6 })));
       stages.push(stage('oxygen', 'Oxygen burning', 'O → Si, S',
         'Oxygen fuses to silicon and sulphur, building the last layer before the iron core.',
         0.5, 4,
-        st({ ...keepR, Tc: 1.8e9, rhoc: 1e7 }), st({ ...keepR, Tc: 2.3e9, rhoc: 3e7 })));
+        st({ ...keepR, Tc: 1.6e9, rhoc: 8e6 }), st({ ...keepR, Tc: 2.3e9, rhoc: 3e7 })));
       stages.push(stage('silicon', 'Silicon burning — iron core grows', 'Si → Fe, Ni (nuclear statistical equilibrium)',
         'In about a day silicon burns to iron-group nuclei. Iron cannot release energy by fusion: the core has no fuel left and grows toward the Chandrasekhar mass.',
         1 / 365, 6,
-        st({ ...keepR, Tc: 3e9, rhoc: 1e8 }), st({ ...keepR, Tc: 4.5e9, rhoc: 1e9 }), { instability: true }));
+        st({ ...keepR, Tc: 2.3e9, rhoc: 3e7 }), st({ ...keepR, Tc: 4.5e9, rhoc: 1e9 }), { instability: true }));
       terminal = isWR ? 'wr-collapse' : 'core-collapse';
     }
   }
