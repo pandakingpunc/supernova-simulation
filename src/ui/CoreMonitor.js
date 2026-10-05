@@ -90,6 +90,12 @@ export class CoreMonitor {
         ctx.fillStyle = `rgba(${255},${Math.round(200 - 120 * hot)},${Math.round(120 - 100 * hot)},0.9)`;
         ctx.beginPath(); ctx.arc(cx, cy, rc, 0, Math.PI * 2); ctx.fill();
       }
+      if (sn?.coreInstability > 0) {
+        // unstable core (infall, bounce, detonation): a warning ring that is strongest at the bounce
+        ctx.strokeStyle = `rgba(255,150,90,${(0.7 * sn.coreInstability).toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(cx, cy, rc + 3, 0, Math.PI * 2); ctx.stroke();
+      }
     }
     // labels
     ctx.font = '10px system-ui, sans-serif';
