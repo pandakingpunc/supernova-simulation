@@ -32,7 +32,7 @@ normal-sized web repository (the built site is under 1 MB).
 - **Supernova model** — core collapse, bounce, shock propagation, shock breakout, plateau /
   radioactive light curve, free expansion and Sedov–Taylor phase, evaluated analytically at any
   instant. *Cinematic* time compression gives every decade of explosion time (0.1 s → 1 s → … →
-  10,000 yr) the same few seconds of screen time.
+  ~1 Myr) the same few seconds of screen time.
 - **Close Observation Mode** — WebGL scene at true relative scale (1 unit = 1 R☉) with a procedural
   photosphere, corona, GPU-particle ejecta (two velocity layers, clumping, cooling colours), a fresnel
   shock front and cinematic camera presets: Orbit, Surface Proximity, Wide System, Explosion Front,
