@@ -153,6 +153,7 @@ scripts/      physics sanity checks
 | --- | --- |
 | Main-sequence luminosity / radius / lifetime | Mass–luminosity power laws, R ∝ M^0.57 (M > 1), τ = 10¹⁰ yr · M / L |
 | Late burning stages | Representative durations and core conditions (C: ~10³ yr, Ne: ~1 yr, O: ~0.5 yr, Si: ~1 day) |
+| Red supergiant size | Radius capped at 1500 R☉ (cf. VY CMa ~1420 R☉); L is kept and T follows Stefan–Boltzmann, so progenitors above ~25 M☉ end as warmer yellow hypergiants rather than ever-larger red ones |
 | Collapse timing | Infall 0.05 s, bounce 0.25 s, shock stall 0.3 s, neutrino-driven revival 0.5 s |
 | Explosion energy | ~10⁵¹ erg scaled weakly with mass; hypernova 2×10⁵² erg; pair instability up to 10⁵³ erg |
 | Ejecta velocity | Uniform-sphere kinetic energy E = 3/10 · M · v_max² |
