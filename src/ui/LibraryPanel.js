@@ -2,7 +2,7 @@
  * Star Library tab: catalogue cards, saved custom stars and the detail card
  * for the selected star (observed data, expected fate, actions).
  */
-import { h, chip, dataRow, button, clear } from './dom.js';
+import { h, chip, dataRow, button, clear, append } from './dom.js';
 import { STAR_CATALOG, POTENTIAL_LABELS } from '../data/starCatalog.js';
 import { starFromPreset, describeStar } from '../sim/StarFactory.js';
 import { blackbodyRGB, rgbToCss } from '../physics/blackbody.js';
@@ -26,7 +26,18 @@ export function createLibraryPanel(ctx) {
   function card(star, isSaved) {
     const rgb = blackbodyRGB(star.temperature);
     const pot = POTENTIAL_LABELS[star.supernovaPotential] ?? (star.mass >= 8 ? POTENTIAL_LABELS.high : POTENTIAL_LABELS.none);
-    const c = h('div', { class: 'star-card', style: { '--dot': rgbToCss(rgb) }, onClick: () => actions.loadStar(star) },
+    const c = h('div', {
+      class: 'star-card',
+      role: 'button',
+      tabindex: '0',
+      'aria-pressed': 'false',
+      style: { '--dot': rgbToCss(rgb) },
+      onClick: () => actions.loadStar(star),
+      onKeydown: (e) => {
+        if (e.target !== e.currentTarget) return; // keep Enter/Space on the inner Delete button its own
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); actions.loadStar(star); }
+      },
+    },
       h('div', { class: 'star-dot' }),
       h('div', {},
         h('div', { class: 'name' }, star.name, chip(pot.text, pot.cls)),
@@ -52,7 +63,11 @@ export function createLibraryPanel(ctx) {
 
   function highlight() {
     const id = store.state.activeStarId;
-    for (const c of [...list.children, ...savedList.children]) c.classList.toggle('active', c.dataset.id === id);
+    for (const c of [...list.children, ...savedList.children]) {
+      const on = c.dataset.id === id;
+      c.classList.toggle('active', on);
+      c.setAttribute('aria-pressed', String(on));
+    }
   }
 
   function renderDetail(star) {
@@ -82,7 +97,7 @@ export function createLibraryPanel(ctx) {
         ? button('Trigger Supernova', () => actions.triggerSupernova(false), 'danger')
         : button('Trigger Experimental Supernova', () => actions.triggerSupernova(true), 'warn'),
     );
-    detail.append(
+    append(detail, [
       h('h3', { class: 'section-title' }, 'Selected star'),
       h('h4', {}, star.name, ' ', star.designation ? h('span', { class: 'designation' }, star.designation) : null),
       star.constellation && star.constellation !== '—' ? h('div', { class: 'designation' }, `${star.constellation}`) : null,
@@ -92,7 +107,7 @@ export function createLibraryPanel(ctx) {
         ? `Natural supernova progenitor — ${d.naturalLabel}. ${star.supernovaWindow ? `Timing: ${star.supernovaWindow}.` : ''} Nobody can predict the exact moment; this simulation lets you skip ahead.`
         : `${star.supernovaWindow ? star.supernovaWindow + '. ' : ''}Forcing an explosion runs an experimental scenario (${d.forcedLabel}) that is not an astronomical prediction.`),
       actionsRow,
-    );
+    ]);
   }
 
   store.on('activeStarId', () => { highlight(); });
