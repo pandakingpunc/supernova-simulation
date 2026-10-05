@@ -10,7 +10,7 @@ import { apparentMagnitudes, assessImpact } from '../src/physics/earthEffects.js
 import { classify, spectralType } from '../src/physics/stellarModel.js';
 import { altAz, localSiderealTime, sunRaDec, moonApprox, daysInYear, dateLabel, hourLabel } from '../src/physics/skyMath.js';
 import { fmtDuration, sci, fmtYears, fmtKelvin, fmtSolarLum, fmtVelocity, fmtLengthMeters, fmtTimestamp, compact } from '../src/core/units.js';
-import { DAY_S, YEAR_S, HOUR_S } from '../src/core/constants.js';
+import { DAY_S, YEAR_S, HOUR_S, FOE, AU_M, LIGHT_YEAR_M, NEUTRINO_BURST_ENERGY_J, SOLAR_TEFF_K } from '../src/core/constants.js';
 import { Simulation } from '../src/sim/Simulation.js';
 import { starFromPreset, buildCustomStar, describeStar } from '../src/sim/StarFactory.js';
 import { loadSettings, loadSavedStars, saveStar, MAX_SAVED_STARS } from '../src/core/storage.js';
@@ -256,6 +256,52 @@ for (const star of STAR_CATALOG) {
   check(d.lifetimeYr >= star.ageYr, `${star.id}: lifetime ${d.lifetimeYr} shorter than age ${star.ageYr}`);
   if (star.supernovaPotential !== 'none') check(d.remainingYr > 0, `${star.id}: no time remaining`);
   check(!/more than a day/.test(star.blurb) || star.id !== 'vy-cma', 'VY CMa blurb claims a breakout longer than modelled');
+}
+
+// Owner decisions (B57 cap, B60 Eta Carinae, B61 ozone, B62 neutrino dose)
+console.log('\nRegression: owner decisions');
+{
+  // B57: red-supergiant radius never exceeds 1500 R☉; stages stay continuous; T follows Stefan–Boltzmann when the cap bites
+  const RMAX = 1500 * 1.001;
+  for (let M = 8; M <= 40; M++) {
+    const t = buildEvolutionTrack({ mass: M });
+    const hasRsg = t.stages.some((s) => s.key === 'rsg');
+    for (let i = 0; i < t.stages.length; i++) {
+      const s = t.stages[i];
+      if (hasRsg && s.key !== 'ms') for (const e of ['start', 'end']) check(s[e].R <= RMAX, `M=${M}: '${s.key}' ${e}.R = ${s[e].R.toFixed(0)} R☉ exceeds the 1500 R☉ cap`);
+      if (s.key === 'rsg') for (const e of ['start', 'end']) {
+        const sb = s[e].R * s[e].R * Math.pow(s[e].T / SOLAR_TEFF_K, 4) / s[e].L;
+        check(Math.abs(Math.log(sb)) < 0.02, `M=${M}: rsg ${e} violates Stefan–Boltzmann (R²T⁴/L = ${sb.toFixed(3)})`);
+      }
+      if (i > 0) for (const k of ['R', 'L', 'T']) check(ratioOk(s.start[k], t.stages[i - 1].end[k], 0.01), `M=${M}: ${k} jumps from '${t.stages[i - 1].key}' to '${s.key}'`);
+    }
+  }
+  for (const star of STAR_CATALOG.filter((x) => x.mass >= 8)) {
+    const t = buildEvolutionTrack(star);
+    applyObservedState(t, star);
+    for (const s of t.stages.filter((x) => x.key === 'hgap' || x.key === 'rsg')) {
+      for (const e of ['start', 'end']) check(s[e].R <= Math.max(1500, star.radius) * 1.001, `${star.id}: '${s.key}' ${e}.R = ${s[e].R.toFixed(0)} R☉ exceeds the cap after applyObservedState`);
+    }
+  }
+  // B60: every catalogue star satisfies Stefan–Boltzmann (R²T⁴/L) within a factor 1.5
+  for (const star of STAR_CATALOG) {
+    const sb = star.radius * star.radius * Math.pow(star.temperature / SOLAR_TEFF_K, 4) / star.luminosity;
+    check(sb > 1 / 1.5 && sb < 1.5, `${star.id}: R²T⁴/L = ${sb.toFixed(2)} violates Stefan–Boltzmann`);
+  }
+  // B61: ozone depletion ∝ E at fixed distance (below the 0.95 clamp)
+  const ozone = (EfoE, dLy) => assessImpact({ E: EfoE * FOE, vMax: 1e7, hasCollapse: false, Eneutrino: 0 }, 1e30, dLy).ozoneDepletion;
+  for (const dLy of [60, 100, 300, 1000]) {
+    const o1 = ozone(1, dLy);
+    check(o1 > 0 && o1 < 0.95, `ozone(1 foe, ${dLy} ly) = ${o1} not below the clamp`);
+    check(ratioOk(ozone(0.25, dLy), o1 / 4, 1e-9) && ratioOk(ozone(2, dLy), o1 * 2, 1e-9), `ozone depletion at ${dLy} ly not linear in E`);
+  }
+  check(ratioOk(ozone(1, 100), ozone(1, 200) * 4, 1e-9), 'ozone depletion not ∝ 1/d²');
+  check(ozone(20, 3) === 0.95 && ozone(1, 1) === 0.95, 'ozone clamp at 0.95 lost');
+  // B62: neutrino dose calibration (5 Sv at 2.3 AU for 3×10⁴⁶ J) unchanged
+  const dose = (EnuJ, au) => assessImpact({ E: FOE, vMax: 1e7, hasCollapse: true, Eneutrino: EnuJ }, 1e30, au * AU_M / LIGHT_YEAR_M).neutrinoDoseSv;
+  check(NEUTRINO_BURST_ENERGY_J === 3e46, `NEUTRINO_BURST_ENERGY_J = ${NEUTRINO_BURST_ENERGY_J}`);
+  check(ratioOk(dose(3e46, 2.3), 5, 1e-9), `neutrino dose at 2.3 AU = ${dose(3e46, 2.3)} Sv, expected 5`);
+  check(ratioOk(dose(3e46, 4.6), 1.25, 1e-9) && ratioOk(dose(1.5e46, 2.3), 2.5, 1e-9), 'neutrino dose scaling with d² or E changed');
 }
 
 // Simulation logic (B4-B7, B27-B30)
