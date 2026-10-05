@@ -251,7 +251,7 @@ void main() {
 export const BEAM_VERT = /* glsl */ `
 varying float vY;
 void main() {
-  vY = position.y; // cone: -0.5 (tip at star) .. 0.5 (far end)
+  vY = position.y; // cone: 0 (tip at star) .. -1 (far end)
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
@@ -261,7 +261,7 @@ uniform vec3 uColor;
 uniform float uIntensity;
 varying float vY;
 void main() {
-  float along = clamp(vY + 0.5, 0.0, 1.0); // 1 at the tip (on the star), 0 at the far end
+  float along = clamp(vY + 1.0, 0.0, 1.0); // 1 at the tip (on the star), 0 at the far end
   float a = pow(along, 1.6) * uIntensity;
   gl_FragColor = vec4(uColor * a, a);
 }

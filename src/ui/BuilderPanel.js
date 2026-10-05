@@ -6,7 +6,7 @@
 import { h, slider, button, dataRow, chip, setChildren } from './dom.js';
 import { buildCustomStar, describeStar } from '../sim/StarFactory.js';
 import { blackbodyRGB, rgbToCss } from '../physics/blackbody.js';
-import { fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtYears, fmtDistanceLy } from '../core/units.js';
+import { fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtYears, fmtSpanYears, fmtDistanceLy } from '../core/units.js';
 import { SOLAR_METALLICITY } from '../core/constants.js';
 
 export function createBuilderPanel(ctx) {
@@ -18,7 +18,7 @@ export function createBuilderPanel(ctx) {
   let advanced = false;
   let preview = null;
 
-  const nameInput = h('input', { type: 'text', placeholder: 'Star name (optional)', onInput: (e) => { params.name = e.target.value; } });
+  const nameInput = h('input', { type: 'text', placeholder: 'Star name (optional)', maxlength: 48, 'aria-label': 'Star name', onInput: (e) => { params.name = e.target.value; } });
   const massS = slider({ label: 'Mass', min: 0.1, max: 150, log: true, value: params.mass, format: (v) => fmtSolarMass(v), onInput: (v) => { params.mass = v; refresh(); } });
   const ageS = slider({ label: 'Age (fraction of lifetime)', min: 0, max: 99.5, step: 0.5, value: params.ageFraction * 100, format: (v) => `${v.toFixed(1)} %`, onInput: (v) => { params.ageFraction = v / 100; refresh(); } });
   const distS = slider({ label: 'Distance from Earth', min: 1e-4, max: 1e5, log: true, value: params.distanceLy, format: (v) => fmtDistanceLy(v), onInput: (v) => { params.distanceLy = v; refresh(); } });
@@ -78,7 +78,7 @@ export function createBuilderPanel(ctx) {
       dataRow('Luminosity', fmtSolarLum(star.luminosity), 'Simulation'),
       dataRow('Current stage', preview.currentStage.name, 'Simulation'),
       dataRow('Total lifetime', fmtYears(preview.lifetimeYr), 'Estimated'),
-      dataRow('Time remaining', fmtYears(preview.remainingYr), 'Estimated'),
+      dataRow('Time remaining', fmtSpanYears(preview.remainingYr), 'Estimated'),
       dataRow('Apparent magnitude', preview.apparentMagnitude.toFixed(1), 'Estimated'),
       dataRow('Fate', preview.terminal, 'Estimated'),
       dataRow('Final state', preview.remnant.name, 'Estimated'),

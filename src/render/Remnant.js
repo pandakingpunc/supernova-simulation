@@ -133,7 +133,7 @@ export class Remnant {
         this.beamA.scale.setScalar(beamLen);
         this.beamB.scale.setScalar(beamLen);
         const magnetar = type === 'magnetar';
-        this.beamMat.uniforms.uIntensity.value = (magnetar ? 0.8 : 1.4) * spinDown + this.flare * 0.3;
+        this.beamMat.uniforms.uIntensity.value = (magnetar ? 0.25 : 0.45) * spinDown + this.flare * 0.1; // beam now fades from 1 at the star, so it needs far less gain
         this.beamMat.uniforms.uColor.value.setRGB(magnetar ? 0.85 : 0.6, magnetar ? 0.5 : 0.8, 1);
         this.fieldLines.scale.setScalar(radius);
         this.fieldLines.material.color.setRGB(magnetar ? 0.85 : 0.45, magnetar ? 0.4 : 0.65, 1);
@@ -153,5 +153,12 @@ export class Remnant {
       gu.uColor.value.setRGB(0.8, 0.9, 1);
       this.glow.scale.setScalar(radius * 6);
     }
+  }
+
+  dispose() {
+    this.group.traverse((o) => {
+      o.geometry?.dispose();
+      o.material?.dispose();
+    });
   }
 }

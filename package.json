@@ -1,6 +1,6 @@
 {
   "name": "supernova-simulation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Interactive, physically-motivated supernova simulation for the browser: stellar evolution, core collapse, ejecta, remnants and an Earth-view observer with light-travel time.",
   "type": "module",
   "private": true,

@@ -53,7 +53,7 @@ export class CoreMonitor {
     let coreR = 3e6; let coreLabel = 'core';
     if (sn) {
       coreR = sn.coreR;
-      coreLabel = sn.remnantVisible ? 'remnant' : 'core';
+      coreLabel = sn.remnantVisible && sn.coreR > 0 ? 'remnant' : 'core';
     } else {
       coreR = 0.02 * Rstar * (snap.stage?.key === 'ms' ? 0.5 : 1);
       if (snap.stage?.instability) coreR = 3e6;
@@ -79,9 +79,23 @@ export class CoreMonitor {
     // core
     if (coreR > 0) {
       const rc = Math.max(toPx(coreR), 2);
-      const hot = sn ? clamp(Math.log10(Math.max(sn.coreT, 1e6) / 1e8), 0, 1) : 0.2;
-      ctx.fillStyle = `rgba(${255},${Math.round(200 - 120 * hot)},${Math.round(120 - 100 * hot)},0.9)`;
-      ctx.beginPath(); ctx.arc(cx, cy, rc, 0, Math.PI * 2); ctx.fill();
+      if (sn && !Number.isFinite(sn.coreT)) {
+        // black hole: no meaningful temperature, draw a dark horizon with a thin light rim
+        ctx.fillStyle = 'rgba(0,0,0,0.95)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, rc, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else {
+        const hot = sn ? clamp(Math.log10(Math.max(sn.coreT, 1e6) / 1e8), 0, 1) : 0.2;
+        ctx.fillStyle = `rgba(${255},${Math.round(200 - 120 * hot)},${Math.round(120 - 100 * hot)},0.9)`;
+        ctx.beginPath(); ctx.arc(cx, cy, rc, 0, Math.PI * 2); ctx.fill();
+      }
+      if (sn?.coreInstability > 0) {
+        // unstable core (infall, bounce, detonation): a warning ring that is strongest at the bounce
+        ctx.strokeStyle = `rgba(255,150,90,${(0.7 * sn.coreInstability).toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(cx, cy, rc + 3, 0, Math.PI * 2); ctx.stroke();
+      }
     }
     // labels
     ctx.font = '10px system-ui, sans-serif';

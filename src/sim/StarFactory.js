@@ -47,7 +47,7 @@ export function buildCustomStar(params) {
     stageProgress: progress,
     radiusOverride: params.radiusOverride || 0,
     temperatureOverride: params.temperatureOverride || 0,
-    type: classify({ mass, radius, temperature, luminosity }).type,
+    type: classify({ mass, radius, temperature, luminosity, stageKey: track.stages[stageIndex].key }).type,
     blurb: 'A user-defined star. All values are model predictions, not observations.',
   };
 }
@@ -55,11 +55,16 @@ export function buildCustomStar(params) {
 /** Derived, human-readable properties for any star (preset or custom). */
 export function describeStar(star) {
   const track = buildEvolutionTrack(star);
-  const cls = classify({ mass: star.mass, radius: star.radius, temperature: star.temperature, luminosity: star.luminosity });
+  const cls = classify({ mass: star.mass, radius: star.radius, temperature: star.temperature, luminosity: star.luminosity, stageKey: star.currentStageKey ?? 'ms' });
   const remnant = predictRemnant({ mass: star.mass, metallicity: star.metallicity, rotation: star.rotation });
   const scenario = determineScenario(star, false);
   const forcedScenario = determineScenario(star, true);
   const stageIdx = Math.max(0, track.stages.findIndex((s) => s.key === (star.currentStageKey ?? 'ms')));
+  // Catalogue ages can exceed the modelled lifetime: measure what remains from the star's place in the track.
+  const cur = track.stages[stageIdx];
+  const trackAgeYr = cur.startYr + cur.durationYr * clamp(star.stageProgress ?? 0, 0, 1);
+  const remainingYr = Math.max(0, track.totalLifetimeYr - trackAgeYr);
+  const lifetimeYr = Math.max(track.totalLifetimeYr, (star.ageYr ?? 0) + remainingYr);
   const path = track.stages.map((s) => s.name);
   const mag = quiescentMagnitude(star);
   return {
@@ -71,9 +76,9 @@ export function describeStar(star) {
     forcedScenario,
     forcedLabel: forcedScenario ? SCENARIO_INFO[forcedScenario].label : null,
     terminal: TERMINAL_LABELS[track.terminal],
-    lifetimeYr: track.totalLifetimeYr,
+    lifetimeYr,
     mainSequenceYr: track.mainSequenceYr,
-    remainingYr: Math.max(0, track.totalLifetimeYr - (star.ageYr ?? 0)),
+    remainingYr,
     currentStage: track.stages[stageIdx],
     path,
     apparentMagnitude: mag.mV,

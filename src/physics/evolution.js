@@ -19,11 +19,18 @@ import { clamp, logLerp, lerp } from '../core/math.js';
 /** Radius (R☉) from luminosity and temperature via Stefan–Boltzmann. */
 const radiusFromLT = (L, T) => Math.sqrt(L) / Math.pow(T / SOLAR_TEFF_K, 2);
 
+const RSG_RMAX = 1500; // R☉: observed red supergiants top out near here (VY CMa ~1420); hotter, yellow hypergiants above
+
 /** Build a state {R, L, T, Tc, rhoc} — provide either R or T with L. */
 function st({ R, L, T, Tc, rhoc }) {
   if (R == null) R = radiusFromLT(L, T);
   if (T == null) T = effectiveTemperature(L, R);
   return { R, L, T, Tc, rhoc };
+}
+
+/** Supergiant state from L and T, with R capped at RSG_RMAX and T following Stefan–Boltzmann when the cap bites. */
+function stCapped({ L, T, Tc, rhoc }) {
+  return radiusFromLT(L, T) > RSG_RMAX ? st({ R: RSG_RMAX, L, Tc, rhoc }) : st({ L, T, Tc, rhoc });
 }
 
 const stage = (key, name, fusion, description, durationYr, displaySec, start, end, extra = {}) => ({
@@ -67,15 +74,16 @@ export function buildEvolutionTrack(star) {
     const Lrgb = Math.max(2500, 4 * Lms);
     const Lagb = Lrgb * 2.5;
     const heL = M < 2 ? 60 : Lrgb * 0.5;
+    const TcMsEnd = 2e7 * Math.pow(M, 0.2);
     stages.push(stage('ms', 'Main sequence', 'H → He (core)',
       'Core hydrogen fusion. The star brightens slowly as helium ash accumulates and the core contracts.',
       tauMS, 10,
       st({ R: Rms, L: Lms, Tc: 1.4e7 * Math.pow(M, 0.2), rhoc: 100 }),
-      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: 2e7 * Math.pow(M, 0.2), rhoc: 200 })));
+      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: TcMsEnd, rhoc: 200 })));
     stages.push(stage('subgiant', 'Subgiant — hydrogen shell burning', 'H → He (shell)',
       'The core is now inert helium. Hydrogen burns in a shell around it while the core contracts and the envelope begins to expand.',
       tauMS * 0.03, 5,
-      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: 2e7, rhoc: 200 }),
+      st({ R: Rms * 1.4, L: Lms * 1.8, Tc: TcMsEnd, rhoc: 200 }),
       st({ R: Rms * 3.5, L: Lms * 2.5, Tc: 5e7, rhoc: 1e4 })));
     stages.push(stage('rgb', 'Red giant branch', 'H → He (shell)',
       'The envelope swells to over a hundred solar radii and cools to ~3,700 K while the helium core keeps contracting.',
@@ -105,7 +113,7 @@ export function buildEvolutionTrack(star) {
     const isWR = M >= WOLF_RAYET_MASS;
     const isPISN = M >= PISN_MIN_MASS && M <= PISN_MAX_MASS && zRel < 0.3;
     const Tc0 = 3.5e7 * Math.pow(M / 15, 0.1);
-    const Lpost = Lms * (M > 25 ? 2 : 3);
+    const Lpost = Lms * lerp(3, 2, clamp((M - 8) / 32, 0, 1)); // continuous in mass (no step at 25 M☉)
     stages.push(stage('ms', 'Main sequence', 'H → He (core, CNO cycle)',
       'Hydrogen burns through the CNO cycle in a large convective core. Even at this stage the star is tens of thousands of times more luminous than the Sun.',
       tauMS, 9,
@@ -128,20 +136,21 @@ export function buildEvolutionTrack(star) {
         'The exhausted core contracts while a hydrogen-burning shell drives the envelope outward. The star crosses the Hertzsprung gap in a few thousand years.',
         tauMS * 0.006, 6,
         st({ R: Rms * 1.6, L: Lms * 1.7, Tc: Tc0 * 1.4, rhoc: 30 }),
-        st({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 })));
+        stCapped({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 })));
       stages.push(stage('rsg', 'Red supergiant — core helium burning', 'He → C, O (core)',
         'Helium fuses to carbon and oxygen in the core while the envelope, now hundreds of solar radii across, churns with enormous convection cells.',
         tauMS * 0.1, 9,
-        st({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 }),
-        st({ L: Lpost * 1.4, T: 3550, Tc: 2.5e8, rhoc: 1e4 })));
+        stCapped({ L: Lpost, T: 3800, Tc: 1.2e8, rhoc: 1e3 }),
+        stCapped({ L: Lpost * 1.4, T: 3550, Tc: 2.5e8, rhoc: 1e4 })));
     }
 
     const late = stages[stages.length - 1].end;
-    const keepR = { L: late.L, T: late.T };
+    const keepR = { R: late.R, L: late.L, T: late.T };
+    // Each late stage starts from the core state where the previous one ended.
     stages.push(stage('carbon', 'Carbon burning', 'C → Ne, Na, Mg',
       'Carbon ignites in the core. From here on neutrino losses carry away most of the energy, so each stage is dramatically shorter than the last.',
       clamp(1200 * Math.pow(15 / M, 1.5), 50, 3000), 5,
-      st({ ...keepR, Tc: 6e8, rhoc: 1e5 }), st({ ...keepR, Tc: 9e8, rhoc: 1e6 })));
+      st({ ...keepR, Tc: late.Tc, rhoc: late.rhoc }), st({ ...keepR, Tc: 9e8, rhoc: 1e6 })));
     if (isPISN) {
       stages.push(stage('pair-instability', 'Pair instability', 'O → Si (runaway)',
         'In the 140–260 M☉ window the core becomes so hot that photons turn into electron–positron pairs, removing pressure support and triggering a runaway collapse and explosive oxygen burning.',
@@ -152,15 +161,15 @@ export function buildEvolutionTrack(star) {
       stages.push(stage('neon', 'Neon burning', 'Ne → O, Mg',
         'Neon photodisintegrates and burns in a phase lasting about a year.',
         1.2, 4,
-        st({ ...keepR, Tc: 1.2e9, rhoc: 4e6 }), st({ ...keepR, Tc: 1.6e9, rhoc: 8e6 })));
+        st({ ...keepR, Tc: 9e8, rhoc: 1e6 }), st({ ...keepR, Tc: 1.6e9, rhoc: 8e6 })));
       stages.push(stage('oxygen', 'Oxygen burning', 'O → Si, S',
         'Oxygen fuses to silicon and sulphur, building the last layer before the iron core.',
         0.5, 4,
-        st({ ...keepR, Tc: 1.8e9, rhoc: 1e7 }), st({ ...keepR, Tc: 2.3e9, rhoc: 3e7 })));
+        st({ ...keepR, Tc: 1.6e9, rhoc: 8e6 }), st({ ...keepR, Tc: 2.3e9, rhoc: 3e7 })));
       stages.push(stage('silicon', 'Silicon burning — iron core grows', 'Si → Fe, Ni (nuclear statistical equilibrium)',
         'In about a day silicon burns to iron-group nuclei. Iron cannot release energy by fusion: the core has no fuel left and grows toward the Chandrasekhar mass.',
         1 / 365, 6,
-        st({ ...keepR, Tc: 3e9, rhoc: 1e8 }), st({ ...keepR, Tc: 4.5e9, rhoc: 1e9 }), { instability: true }));
+        st({ ...keepR, Tc: 2.3e9, rhoc: 3e7 }), st({ ...keepR, Tc: 4.5e9, rhoc: 1e9 }), { instability: true }));
       terminal = isWR ? 'wr-collapse' : 'core-collapse';
     }
   }
@@ -187,7 +196,19 @@ export function applyObservedState(track, star) {
     s.start[q] *= ratio;
     s.end[q] *= ratio;
   }
-  // Keep the stage after continuous with the adjusted end (only for R/L/T).
+  // Rescaling must not push a supergiant stage past RSG_RMAX (e.g. Rigel's hgap end): cap the
+  // offending end and re-solve the other so the model value at progress p still equals the observation.
+  if (s.key === 'hgap' || s.key === 'rsg') {
+    const c = Math.log(Math.max(RSG_RMAX, observed.R));
+    const o = Math.log(observed.R);
+    const a = Math.log(s.start.R);
+    const b = Math.log(s.end.R);
+    if (a > c) { s.start.R = Math.exp(c); s.end.R = Math.exp((o - (1 - p) * c) / p); }
+    else if (b > c) { s.end.R = Math.exp(c); s.start.R = Math.exp((o - p * c) / (1 - p)); }
+  }
+  // Keep the neighbouring stages continuous with the adjusted start/end (only for R/L/T).
+  const prev = track.stages[idx - 1];
+  if (prev) for (const q of ['R', 'L', 'T']) prev.end[q] = s.start[q];
   const next = track.stages[idx + 1];
   if (next) for (const q of ['R', 'L', 'T']) next.start[q] = s.end[q];
   return { stageIndex: idx, progress: p };

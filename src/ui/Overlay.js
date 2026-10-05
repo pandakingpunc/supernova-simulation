@@ -3,15 +3,18 @@
  * banner), scale bar, FPS and the Earth View status block.
  */
 import { h, button, setChildren } from './dom.js';
-import { fmtLengthMeters, fmtDuration, fmtYears, sci } from '../core/units.js';
+import { fmtLengthMeters, fmtDuration, fmtDistanceLy, sci } from '../core/units.js';
 import { CAMERA_PRESETS } from '../render/CameraRig.js';
-import { YEAR_S } from '../core/constants.js';
 
 export function createOverlay(ctx) {
   const { store, scene, earth, actions } = ctx;
   const camInfo = h('div', { class: 'cam-info' });
   const forcedBanner = h('div', { class: 'forced-banner', style: { display: 'none' } }, 'Experimental scenario — not an astronomical prediction');
   const lightBanner = h('div', { class: 'light-banner', style: { display: 'none' } });
+  // persistent children: rebuilding the button every tick would swallow clicks and drop focus
+  const lightText = document.createTextNode('');
+  const jumpBtn = button('Jump to light arrival', () => actions.jumpToLightArrival(), 'small primary');
+  lightBanner.append(lightText, jumpBtn);
   const hud = h('div', { class: 'hud' }, camInfo, h('div', { style: { display: 'flex', gap: '8px', flexDirection: 'column', alignItems: 'flex-end' } }, forcedBanner, lightBanner));
   const scaleLabel = h('span');
   const scaleBar = h('div', { class: 'scale-bar' }, h('i'), scaleLabel);
@@ -40,7 +43,7 @@ export function createOverlay(ctx) {
       if (earthInfo && earthSnap) {
         lines.push(h('div', { class: 'line big' }, `${snap.star.name} · ${earthInfo.timeLabel} · lat ${earth.state.latitude.toFixed(0)}°`));
         if (earthInfo.mV != null) {
-          lines.push(h('div', { class: 'line' }, `Apparent magnitude ${earthInfo.mV.toFixed(1)}  ·  ${sci(earthInfo.lux)} lux`));
+          lines.push(h('div', { class: 'line' }, `Apparent magnitude ${earthInfo.mV.toFixed(1)}  ·  ${sci(earthInfo.lux)} lux${earthInfo.starUp ? '' : ' (below horizon)'}`));
           lines.push(h('div', { class: 'line dim' }, earthInfo.comparison?.label ?? ''));
         }
         if (earthInfo.starAlt != null) lines.push(h('div', { class: 'line dim' }, `altitude ${earthInfo.starAlt.toFixed(1)}°, azimuth ${earthInfo.starAz.toFixed(0)}° · sky: ${earthInfo.sunAlt > 0 ? 'day' : earthInfo.sunAlt > -18 ? 'twilight' : 'night'} · limiting mag ${earthInfo.mLim.toFixed(1)}`));
@@ -48,16 +51,13 @@ export function createOverlay(ctx) {
           const t = earthSnap.retardedT;
           lines.push(h('div', { class: 'line' }, `Earth sees: ${earthSnap.sn.phase.name} (light emitted ${fmtDuration(t)} after collapse)`));
         } else if (earthSnap.lightArrived === false) {
-          lines.push(h('div', { class: 'line' }, `Earth still sees the pre-explosion star — light arrives in ${fmtYears(earthSnap.arrivalIn / YEAR_S)}`));
+          lines.push(h('div', { class: 'line' }, `Earth still sees the pre-explosion star — light arrives in ${fmtDuration(Math.max(0, earthSnap.arrivalIn))}`));
         }
       }
       setChildren(earthStatus, ...lines);
       // light-travel banner
       if (snap.phase === 'supernova' && store.state.respectLightTravel && earthSnap && earthSnap.lightArrived === false) {
-        setChildren(lightBanner, 
-          `Light from the explosion has not reached Earth yet (${fmtYears(snap.star.distanceLy)} away). `,
-          button('Jump to light arrival', () => actions.jumpToLightArrival(), 'small primary'),
-        );
+        lightText.nodeValue = `Light from the explosion has not reached Earth yet (${fmtDistanceLy(snap.star.distanceLy)} away). `;
         lightBanner.style.display = '';
       } else lightBanner.style.display = 'none';
     } else {

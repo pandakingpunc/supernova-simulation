@@ -4,7 +4,7 @@
  * storage never breaks the app. Total footprint stays in the kilobytes.
  */
 const PREFIX = 'supernova-sim:';
-const MAX_SAVED_STARS = 24;
+export const MAX_SAVED_STARS = 24;
 
 function read(key, fallback) {
   try {
@@ -18,23 +18,38 @@ function read(key, fallback) {
 function write(key, value) {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    return true;
   } catch {
-    /* storage unavailable or full: ignore, the app works without it */
+    /* storage unavailable or full: the app works without it, callers may report the failure */
+    return false;
   }
 }
 
-export const loadSettings = () => read('settings', {});
+const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+// Fields the library, compare and simulation code dereference without checks.
+const isStar = (s) => isObj(s) && typeof s.id === 'string' && typeof s.name === 'string'
+  && s.mass > 0 && s.radius > 0 && s.temperature > 0 && s.luminosity > 0
+  && ['mass', 'radius', 'temperature', 'luminosity', 'ageYr', 'distanceLy', 'ra', 'dec'].every((k) => isNum(s[k]));
+
+export const loadSettings = () => {
+  const v = read('settings', {});
+  return isObj(v) ? v : {};
+};
 export const saveSettings = (settings) => write('settings', settings);
 
-export const loadSavedStars = () => read('stars', []);
+export const loadSavedStars = () => {
+  const v = read('stars', []);
+  return Array.isArray(v) ? v.filter(isStar) : [];
+};
 export function saveStar(star) {
   const list = loadSavedStars().filter((s) => s.id !== star.id);
   list.unshift(star);
-  write('stars', list.slice(0, MAX_SAVED_STARS));
-  return list;
+  const evicted = list.length > MAX_SAVED_STARS; // the oldest presets fall off the end
+  const kept = list.slice(0, MAX_SAVED_STARS);
+  return { ok: write('stars', kept), list: kept, evicted };
 }
 export function deleteStar(id) {
   const list = loadSavedStars().filter((s) => s.id !== id);
-  write('stars', list);
-  return list;
+  return { ok: write('stars', list), list };
 }

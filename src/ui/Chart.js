@@ -93,11 +93,23 @@ export class Chart {
     // x ticks
     ctx.textAlign = 'center';
     const xTicks = xLog ? logTicks(xmin, xmax, 6) : linTicks(xmin, xmax, 4);
+    const xLabel = (t, digits) => (xLog ? fmtDuration(Math.pow(10, t), 0) : fmtYears(t, digits));
+    // tiny spans: add precision until the labels differ, then drop any that still repeat
+    let digits = 1;
+    while (!xLog && digits < 6 && new Set(xTicks.map((t) => xLabel(t, digits))).size < xTicks.length) digits++;
+    let prevLabel = null; let prevRight = -Infinity;
     for (const t of xTicks) {
       const x = px(t);
       ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h - PAD.b); ctx.stroke();
-      const label = xLog ? fmtDuration(Math.pow(10, t), 0) : fmtYears(t, 1);
-      ctx.fillText(label, clamp(x, PAD.l + 14, w - 18), h - 6);
+      const label = xLabel(t, digits);
+      if (label === prevLabel) continue;
+      prevLabel = label;
+      // keep the whole label inside the plot area instead of centring it on a tick near the edge
+      const half = ctx.measureText(label).width / 2;
+      const cx = clamp(x, PAD.l + half, w - 4 - half);
+      if (cx - half < prevRight + 4) continue; // would overlap the previous label
+      prevRight = cx + half;
+      ctx.fillText(label, cx, h - 6);
     }
     // line
     ctx.strokeStyle = this.color;
@@ -143,6 +155,10 @@ function linTicks(min, max, count = 4) {
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw;
   const out = [];
-  for (let t = Math.ceil(min / step) * step; t <= max; t += step) out.push(t);
+  // when step is below the float spacing at min, `t += step` never advances: stop there
+  for (let t = Math.ceil(min / step) * step; t <= max && out.length < 12; t += step) {
+    out.push(t);
+    if (t + step === t) break;
+  }
   return out;
 }

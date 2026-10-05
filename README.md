@@ -32,7 +32,7 @@ normal-sized web repository (the built site is under 1 MB).
 - **Supernova model** — core collapse, bounce, shock propagation, shock breakout, plateau /
   radioactive light curve, free expansion and Sedov–Taylor phase, evaluated analytically at any
   instant. *Cinematic* time compression gives every decade of explosion time (0.1 s → 1 s → … →
-  10,000 yr) the same few seconds of screen time.
+  ~1 Myr) the same few seconds of screen time.
 - **Close Observation Mode** — WebGL scene at true relative scale (1 unit = 1 R☉) with a procedural
   photosphere, corona, GPU-particle ejecta (two velocity layers, clumping, cooling colours), a fresnel
   shock front and cinematic camera presets: Orbit, Surface Proximity, Wide System, Explosion Front,
@@ -153,6 +153,7 @@ scripts/      physics sanity checks
 | --- | --- |
 | Main-sequence luminosity / radius / lifetime | Mass–luminosity power laws, R ∝ M^0.57 (M > 1), τ = 10¹⁰ yr · M / L |
 | Late burning stages | Representative durations and core conditions (C: ~10³ yr, Ne: ~1 yr, O: ~0.5 yr, Si: ~1 day) |
+| Red supergiant size | Radius capped at 1500 R☉ (cf. VY CMa ~1420 R☉); L is kept and T follows Stefan–Boltzmann, so progenitors above ~25 M☉ end as warmer yellow hypergiants rather than ever-larger red ones |
 | Collapse timing | Infall 0.05 s, bounce 0.25 s, shock stall 0.3 s, neutrino-driven revival 0.5 s |
 | Explosion energy | ~10⁵¹ erg scaled weakly with mass; hypernova 2×10⁵² erg; pair instability up to 10⁵³ erg |
 | Ejecta velocity | Uniform-sphere kinetic energy E = 3/10 · M · v_max² |
@@ -163,9 +164,9 @@ scripts/      physics sanity checks
 | Remnant evolution | Free expansion until swept ISM mass = ejecta mass (n = 1 cm⁻³), then Sedov–Taylor R ∝ t^(2/5) |
 | Remnant type | White dwarf < 8 M☉ (Kalirai 2008 initial–final mass relation); neutron star 8–~20 M☉; black hole above, metallicity dependent; pair instability 140–260 M☉ at low Z |
 | Apparent magnitude | M_bol = 4.74 − 2.5 log₁₀(L/L☉), inverse-square law, approximate bolometric correction |
-| Ozone depletion | ~47% at 8 pc for a canonical supernova (Gehrels et al. 2003), scaled ∝ E / d² |
+| Ozone depletion | ~47% at 8 pc for a canonical supernova (Gehrels et al. 2003), scaled ∝ E / d² (linear in explosion energy, clamped at 95%) |
 | Kill distance | ~8–10 pc (Fields et al. 2020) |
-| Neutrino dose | ~5 Sv at 2.3 AU for a 10⁵³ erg burst, ∝ 1/d² |
+| Neutrino dose | ~5 Sv at 2.3 AU for a 3×10⁵³ erg burst, ∝ 1/d² |
 | Sky positions | Local sidereal time from date and local solar time; Sun on the ecliptic; Moon from its synodic age |
 
 ## License
@@ -182,7 +183,7 @@ Zenodo. GitHub also offers a *Cite this repository* button that reads [`CITATION
 @software{karatum_supernova_simulation_2026,
   author    = {Karatum, Mustafa},
   title     = {Supernova Simulation},
-  version   = {1.0.0},
+  version   = {1.1.0},
   year      = {2026},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.22844442},

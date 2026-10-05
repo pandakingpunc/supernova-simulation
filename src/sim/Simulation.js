@@ -12,7 +12,7 @@
  * of wall-clock seconds. That is what makes a 0.25 s collapse and a
  * 100-day plateau both watchable in one sitting.
  */
-import { buildEvolutionTrack, applyObservedState, stateAtStage, stageForAge } from '../physics/evolution.js';
+import { buildEvolutionTrack, applyObservedState, stateAtStage } from '../physics/evolution.js';
 import { buildSupernovaModel, determineScenario } from '../physics/supernovaModel.js';
 import { predictRemnant } from '../physics/remnants.js';
 import { blackbodyRGB } from '../physics/blackbody.js';
@@ -30,7 +30,7 @@ export const TIME_MODES = {
 };
 
 const SECONDS_PER_DECADE = 5; // wall-clock seconds per decade of explosion time in cinematic mode
-const T_EXP_START = -3; // s before collapse where the explosion clock starts
+export const T_EXP_START = -3; // s before collapse where the explosion clock starts
 const T_EXP_LOG_START = 0.02; // s: below this the cinematic clock runs in real time
 const T_EXP_MAX = 3e13; // ~1 Myr: the remnant has merged with the ISM
 const HISTORY_INTERVAL = 0.12; // s of wall-clock between chart samples
@@ -42,6 +42,7 @@ export class Simulation {
     this.star = null;
     this.phase = 'idle';
     this.timeMode = 'pause';
+    this.lastPlayMode = null; // last non-pause mode, restored by resumeMode()
     this.speed = 1;
     this.tExp = T_EXP_START;
     this.cinematicOrigin = 0;
@@ -72,7 +73,9 @@ export class Simulation {
     const pos = applyObservedState(this.track, star);
     this.stageIndex = pos.stageIndex;
     this.stageProgress = pos.progress;
+    this.progressComp = 0;
     this.trackAgeAtLoad = this.track.stages[pos.stageIndex].startYr + this.track.stages[pos.stageIndex].durationYr * pos.progress;
+    this.ageOffsetYr = star.ageYr - this.trackAgeAtLoad;
     this.phase = 'evolution';
     this.model = null;
     this.forced = false;
@@ -80,6 +83,7 @@ export class Simulation {
     this.evolved = false;
     this.postAgeS = 0;
     this.timeMode = 'pause';
+    this.lastPlayMode = null;
     this.resetHistory('evolution');
     this.eventLog = [{
       ageYr: star.ageYr, key: 'load', title: `${star.name} loaded`, stageIndex: pos.stageIndex,
@@ -94,7 +98,18 @@ export class Simulation {
     if (mode === 'evolution' && this.phase !== 'evolution') return;
     if (mode === 'cinematic' && this.phase !== 'supernova') return;
     this.timeMode = mode;
+    if (mode !== 'pause') this.lastPlayMode = mode;
     this.emit('timeMode', mode);
+  }
+
+  /** Mode to continue with after a pause: the last one if it still fits the phase, else a sensible default. */
+  resumeMode() {
+    const m = this.lastPlayMode;
+    const valid = m && m !== 'pause'
+      && (m !== 'evolution' || this.phase === 'evolution')
+      && (m !== 'cinematic' || this.phase === 'supernova');
+    if (valid) return m;
+    return this.phase === 'supernova' ? 'cinematic' : this.phase === 'ended' ? 'x1000' : 'evolution';
   }
 
   setSpeed(s) { this.speed = clamp(s, 0.25, 4); }
@@ -117,19 +132,22 @@ export class Simulation {
    */
   triggerSupernova({ forced = false } = {}) {
     if (!this.star || this.phase === 'supernova') return null;
-    const scenario = determineScenario(this.star, forced);
+    // After evolution ended only the remnant is left to explode, not the initial-mass progenitor.
+    const progenitor = this.phase === 'ended' && this.remnant ? { ...this.star, mass: this.remnant.mass } : this.star;
+    const scenario = determineScenario(progenitor, forced);
     if (!scenario) return null;
     const lastIdx = this.track.stages.length - 1;
     const collapseState = this.isCollapseTerminal()
       ? stateAtStage(this.track, lastIdx, 1)
       : this.currentEvolutionState();
     this.collapseState = collapseState;
-    this.model = buildSupernovaModel(this.star, collapseState, scenario);
+    this.model = buildSupernovaModel(progenitor, collapseState, scenario);
     this.forced = !this.model.params.natural;
     this.phase = 'supernova';
     this.tExp = T_EXP_START;
     this.cinematicOrigin = 0;
     this.timeMode = 'cinematic';
+    this.lastPlayMode = 'cinematic';
     this.resetHistory('supernova');
     this.emit('supernova', this.model);
     this.emit('phase', this.phase);
@@ -140,6 +158,8 @@ export class Simulation {
   seek(t) {
     if (this.phase !== 'supernova') return;
     this.tExp = clamp(t, T_EXP_START, T_EXP_MAX);
+    this.cinematicOrigin = 0; // a manual seek restores the normal log clock
+    this.truncateHistory(this.tExp);
     this.emit('seek', this.tExp);
   }
 
@@ -148,7 +168,12 @@ export class Simulation {
     this.phase = 'evolution';
     this.stageIndex = clamp(index, 0, this.track.stages.length - 1);
     this.stageProgress = 0;
+    this.progressComp = 0;
+    const reanchored = this.ageOffsetYr !== 0;
+    this.ageOffsetYr = 0; // re-anchor the age to the track so an earlier stage never reads a negative age
     this.evolved = true;
+    if (reanchored) this.resetHistory('evolution'); // old samples used the previous age anchor
+    else this.truncateHistory(this.currentAgeYr());
     this.emit('stage', this.stageIndex);
     this.emit('phase', this.phase);
   }
@@ -171,6 +196,7 @@ export class Simulation {
     const stage = this.track.stages[this.stageIndex];
     if (this.timeMode === 'evolution') {
       const before = this.stageIndex;
+      this.progressComp = 0;
       this.stageProgress += (dt / stage.displaySec) * this.speed;
       this.timeRate = (stage.durationYr * YEAR_S) / stage.displaySec * this.speed;
       this.evolved = true;
@@ -187,18 +213,30 @@ export class Simulation {
       }
       if (before !== this.stageIndex) this.emit('stage', this.stageIndex);
     } else if (mode.rate > 0) {
-      const trackAge = stage.startYr + stage.durationYr * this.stageProgress + (dt * mode.rate) / YEAR_S;
-      const pos = stageForAge(this.track, trackAge);
-      if (pos.stageIndex !== this.stageIndex) {
-        this.stageIndex = pos.stageIndex;
-        const s = this.track.stages[this.stageIndex];
-        this.eventLog.push({ ageYr: this.currentAgeYr(), key: s.key, title: s.name, detail: s.fusion, stageIndex: this.stageIndex });
-        this.emit('stage', this.stageIndex);
-      }
-      this.stageProgress = pos.progress;
+      // Accumulate stage-local progress (compensated sum): recomputing an absolute age (~1e10 yr)
+      // would lose per-frame increments of a few seconds to float precision.
+      const before = this.stageIndex;
+      const y = (dt * mode.rate) / YEAR_S / stage.durationYr - this.progressComp;
+      const sum = this.stageProgress + y;
+      this.progressComp = (sum - this.stageProgress) - y;
+      this.stageProgress = sum;
       this.timeRate = mode.rate;
       if (mode.rate > 1) this.evolved = true;
-      if (trackAge >= this.track.totalLifetimeYr) this.finishEvolution();
+      while (this.stageProgress >= 1) {
+        if (this.stageIndex >= this.track.stages.length - 1) {
+          this.stageProgress = 1;
+          if (before !== this.stageIndex) this.emit('stage', this.stageIndex);
+          this.finishEvolution();
+          return;
+        }
+        const carryYr = (this.stageProgress - 1) * this.track.stages[this.stageIndex].durationYr;
+        this.stageIndex++;
+        const s = this.track.stages[this.stageIndex];
+        this.stageProgress = carryYr / s.durationYr;
+        this.progressComp = 0;
+        this.eventLog.push({ ageYr: this.currentAgeYr(), key: s.key, title: s.name, detail: s.fusion, stageIndex: this.stageIndex });
+      }
+      if (before !== this.stageIndex) this.emit('stage', this.stageIndex);
     } else {
       this.timeRate = 0;
     }
@@ -212,6 +250,7 @@ export class Simulation {
       this.remnant = predictRemnant({ mass: this.star.mass, metallicity: this.star.metallicity, rotation: this.star.rotation });
       this.postAgeS = 0;
       this.timeMode = 'x1000';
+      this.lastPlayMode = 'x1000';
       this.eventLog.push({ ageYr: this.currentAgeYr(), key: 'end', title: `${this.remnant.name} formed`, detail: 'The star has reached the end of its life without a supernova.' });
       this.emit('ended', this.remnant);
       this.emit('phase', this.phase);
@@ -247,7 +286,7 @@ export class Simulation {
   currentAgeYr() {
     const s = this.track.stages[this.stageIndex];
     const trackAge = s.startYr + s.durationYr * this.stageProgress;
-    return this.star.ageYr + (trackAge - this.trackAgeAtLoad);
+    return Math.max(0, trackAge + this.ageOffsetYr);
   }
 
   currentEvolutionState() {
@@ -259,8 +298,10 @@ export class Simulation {
     const st = this.currentEvolutionState();
     const ended = this.phase === 'ended';
     // Planetary nebula age: grows through the 'pn' stage and keeps growing after the star has ended.
+    // Helium white dwarfs (no 'pn' stage) never make one.
+    const hasPN = this.track.stages.some((s) => s.nebula);
     let nebulaAgeS = 0;
-    if (ended) nebulaAgeS = PN_STAGE_DURATION_YR * YEAR_S + this.postAgeS;
+    if (ended && hasPN) nebulaAgeS = PN_STAGE_DURATION_YR * YEAR_S + this.postAgeS;
     else if (st.stage.nebula) nebulaAgeS = st.progress * PN_STAGE_DURATION_YR * YEAR_S;
     const pnStage = this.track.stages.find((s) => s.key === 'agb');
     return {
@@ -277,10 +318,10 @@ export class Simulation {
       mass: this.star.mass,
       instability: st.instability,
       remnantForming: st.remnantForming,
-      nebula: !!st.stage.nebula || ended,
+      nebula: !!st.stage.nebula || (ended && hasPN),
       color: blackbodyRGB(st.T),
       timeRate: this.timeRate,
-      dataLabel: this.evolved ? 'Simulation' : 'Observed',
+      dataLabel: this.star.observed && !this.evolved ? 'Observed' : 'Simulation',
       remnant: ended ? this.remnant : null,
       postAgeS: this.postAgeS,
       model: null,
@@ -331,7 +372,7 @@ export class Simulation {
       return {
         phase: 'evolution', star: this.star, tExp: null, retardedT: tRet, lightArrived: false,
         R: cs.R, L: cs.L, T: cs.T, color: blackbodyRGB(cs.T), sn: null, model: this.model,
-        arrivalIn: -tRet,
+        arrivalIn: T_EXP_START - tRet, // star-frame seconds until the light arrives (same threshold as lightArrived)
       };
     }
     return { ...this.supernovaSnapshot(tRet), retardedT: tRet, lightArrived: true };
@@ -342,6 +383,15 @@ export class Simulation {
   resetHistory(kind) {
     this.history = { kind, x: [], L: [], R: [], Tc: [], Rs: [] };
     this.historyTimer = HISTORY_INTERVAL;
+  }
+
+  /** Drop chart samples at or after x so a backward seek does not draw a doubled-back trace. */
+  truncateHistory(x) {
+    const h = this.history;
+    if (!h) return;
+    let n = h.x.length;
+    while (n > 0 && h.x[n - 1] >= x) n--;
+    if (n < h.x.length) for (const k of ['x', 'L', 'R', 'Tc', 'Rs']) h[k].length = n;
   }
 
   sampleHistory(dt, snap) {

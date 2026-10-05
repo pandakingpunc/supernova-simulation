@@ -25,6 +25,7 @@ import {
   NEUTRON_STAR_RADIUS_M,
 } from '../core/constants.js';
 import { clamp, logLogInterp, smoothstep } from '../core/math.js';
+import { fmtDuration } from '../core/units.js';
 import { predictRemnant, schwarzschildRadius } from './remnants.js';
 
 const LN2 = Math.LN2;
@@ -36,6 +37,7 @@ const T_INFALL = 0.05; // s, collapse becomes supersonic
 const T_BOUNCE = 0.25; // s, core reaches nuclear density
 const T_SHOCK_STALL = 0.3; // s
 const T_SHOCK_REVIVAL = 0.5; // s, neutrino heating relaunches the shock
+const R_BOUNCE_M = 3e6 * Math.cbrt(1e9 / 3e14); // m, core radius at bounce density (~3e14 g/cm³) for the infall law below
 
 export const SCENARIO_INFO = {
   'core-collapse': { label: 'Type II core-collapse supernova', natural: true },
@@ -188,17 +190,20 @@ export function luminosityAt(p, t) {
   const trapping = 1 - Math.exp(-Math.pow(p.tGamma / Math.max(te, 1), 2)); // gamma rays leak out late
   L += decayPower(p.MNi * SOLAR_MASS_KG, te) * diffusion * trapping;
   // 4) pulsar wind nebula / compact object at very late times
-  L += p.pulsarLum / Math.pow(1 + te / (1000 * YEAR_S), 2);
+  L += p.pulsarLum * smoothstep(0, p.tBoDur * 0.35, te) / Math.pow(1 + te / (1000 * YEAR_S), 2); // switched on with the breakout flash so L is continuous
+  // 5) the progenitor's own light fades into the flash rather than vanishing at breakout
+  L += p.Lstar * Math.exp(-te / p.tBoDur);
   return Math.max(L, 1e20);
 }
 
-/** Optical peak: the maximum after the breakout flash has faded (from 1.5 days to 2 years). */
+/** Optical peak: the maximum of the plateau/radioactive light curve (1.5 days to 2 years), excluding the breakout flash and its shock-cooling tail. */
 function findPeak(p) {
+  const q = { ...p, LBreakout: 0 };
   let best = { t: p.tBreakout, L: 0 };
   const tStart = Math.max(1.5 * DAY_S, p.tBoDur * 8);
   for (let i = 0; i <= 300; i++) {
     const t = p.tBreakout + tStart * Math.pow(10, (i / 300) * Math.log10((YEAR_S * 2) / tStart));
-    const L = luminosityAt(p, t);
+    const L = luminosityAt(q, t);
     if (L > best.L) best = { t, L };
   }
   return best;
@@ -246,7 +251,8 @@ function stateAt(model, t) {
     Enu: p.hasCollapse && t > T_BOUNCE ? p.Eneutrino * (1 - Math.exp(-(t - T_BOUNCE) / NEUTRINO_BURST_TIMESCALE_S)) : 0,
     Ekin: 0,
     flash: 0,
-    instability: 0,
+    instability: 0, // surface shudder
+    coreInstability: 0,
     ejectaVisible: false,
     ejectaAge: 0,
     remnantVisible: false,
@@ -256,6 +262,9 @@ function stateAt(model, t) {
     Rej: 0,
   };
 
+  // The pre-collapse shudder fades out as the core goes dark; the core's own state is coreInstability.
+  if (t >= 0 && t < T_BOUNCE) s.instability = 0.6 * (1 - t / T_BOUNCE);
+
   // ---- Core ----
   if (p.hasCollapse) {
     if (t < 0) {
@@ -263,25 +272,32 @@ function stateAt(model, t) {
     } else if (t < T_BOUNCE) {
       const f = t / T_BOUNCE; // infall: radius falls roughly as free fall
       const ff = 1 - Math.pow(f, 2.5);
-      s.coreR = Math.max(NEUTRON_STAR_RADIUS_M * 2, 3e6 * ff);
-      s.coreT = 4.5e9 * Math.pow(3e6 / s.coreR, 1.2);
+      s.coreR = Math.max(R_BOUNCE_M, 3e6 * ff);
+      s.coreT = Math.min(3e11, 4.5e9 * Math.pow(3e6 / s.coreR, 1.2)); // reaches the post-bounce start temperature
       s.coreRho = 1e9 * Math.pow(3e6 / s.coreR, 3);
-      s.instability = 0.6 + 0.4 * f;
+      s.coreInstability = 0.6 + 0.4 * f;
     } else {
       const tb = t - T_BOUNCE;
-      s.coreR = p.remnant.type === 'black-hole'
+      const rBase = p.remnant.type === 'black-hole'
         ? (t < 5 ? NEUTRON_STAR_RADIUS_M * 1.5 : p.remnantRadius)
         : NEUTRON_STAR_RADIUS_M * (1 + 1.5 * Math.exp(-tb / 2)); // proto-NS shrinks as it cools
+      const settle = t < 5 || p.remnant.type !== 'black-hole' ? Math.max(0, R_BOUNCE_M - rBase) * Math.exp(-tb / 0.05) : 0; // carries the infall radius into the proto-NS
+      s.coreR = rBase + settle;
       s.coreT = p.remnant.type === 'black-hole' && t >= 5 ? NaN : logLogInterp(CORE_T_COOLING, Math.max(t, 0.25));
-      s.coreRho = p.remnant.type === 'black-hole' && t >= 5 ? Infinity : 4e14 * (t < 2 ? 0.5 + 0.5 * Math.min(1, tb / 2) : 1);
-      s.instability = t < 2 ? 1 : 0;
+      s.coreRho = p.remnant.type === 'black-hole' && t >= 5 ? Infinity : 3e14 + 1e14 * Math.min(1, tb / (2 - T_BOUNCE));
+      s.coreInstability = t < 2 ? 1 : 0;
       s.remnantVisible = t > (p.remnant.type === 'black-hole' ? 5 : 2);
     }
   } else {
     // Thermonuclear / pair instability: no compact core; a detonation wave sweeps the star.
     if (t < 0) s.instability = clamp(1 + t / (HOUR_S * 2), 0, 1) * 0.6;
-    else { s.coreT = t < 3 ? 6e9 : 1e9; s.coreRho = t < 3 ? 2e9 : 1e6; s.instability = t < 3 ? 1 : 0; }
-    s.coreR = t < 3 ? 5e6 : 0;
+    else {
+      const f = smoothstep(3, 6, t); // the burnt-out core relaxes over a few seconds instead of stepping at t = 3 s
+      s.coreT = 6e9 * Math.pow(1e9 / 6e9, f);
+      s.coreRho = 2e9 * Math.pow(1e6 / 2e9, f);
+      s.coreInstability = 1 - f;
+    }
+    s.coreR = 5e6 * (1 - smoothstep(3, 6, Math.max(t, 0)));
   }
 
   // ---- Shock / ejecta ----
@@ -293,7 +309,7 @@ function stateAt(model, t) {
     s.breakoutProgress = frac;
     s.Ekin = p.E * Math.pow(frac, 1.2);
     s.Mbound = p.Mtotal - (p.Mej) * Math.pow(frac, 1.5);
-    s.instability = Math.max(s.instability, 0.3 + 0.7 * Math.pow(frac, 3)); // surface shudders only as the shock nears it
+    s.instability = Math.max(s.instability, 0.7 * Math.pow(frac, 3)); // surface shudders only as the shock nears it
   } else if (t >= p.tBreakout) {
     const te = t - p.tBreakout;
     s.ejectaVisible = true;
@@ -301,14 +317,18 @@ function stateAt(model, t) {
     s.Ekin = p.E;
     s.Mbound = p.remnantMass;
     s.breakoutProgress = 1;
-    if (t < p.tSedov) {
-      s.Rshock = p.Rstar + p.vMax * te;
-      s.vShock = p.vMax;
-    } else {
-      const tS = p.tSedov - p.tBreakout;
-      s.Rshock = p.RSedov * Math.pow(te / tS, 0.4);
-      s.vShock = 0.4 * s.Rshock / te;
-    }
+    // Free expansion → Sedov–Taylor, joined by a smooth min-blend so R and v = dR/dt stay continuous
+    const teS = Math.max(te, 1);
+    const tS = p.tSedov - p.tBreakout;
+    const n = 8;
+    const Rff = p.Rstar + p.vMax * te;
+    const Rst = p.RSedov * Math.pow(teS / tS, 0.4);
+    const vst = 0.4 * Rst / teS;
+    const Rinv = Math.pow(Rff, -n) + Math.pow(Rst, -n);
+    s.Rshock = Math.pow(Rinv, -1 / n);
+    s.vShock = (Math.pow(Rff, -n - 1) * p.vMax + Math.pow(Rst, -n - 1) * vst) / Math.pow(Rinv, (n + 1) / n);
+    // The readout eases from the internal shock speed to the ejecta speed over the breakout duration instead of stepping (R is untouched, so dR/dt = vShock again after tBoDur)
+    s.vShock += (INTERNAL_SHOCK_SPEED - s.vShock) * (1 - smoothstep(0, p.tBoDur, te));
     s.Rej = s.Rshock;
     s.flash = te < p.tBoDur * 4 ? Math.exp(-te / (p.tBoDur * 1.2)) * smoothstep(0, p.tBoDur * 0.3, te) : 0;
     // Photosphere: expands with the inner ejecta, then recedes in mass coordinate after the plateau/peak
@@ -318,11 +338,13 @@ function stateAt(model, t) {
     s.Rphot = te > 3 * YEAR_S ? 0 : Math.min(p.Rstar + p.vPhot * te * Math.max(recede, 0.15), s.Rshock);
     // Colour temperature: hot flash cooling toward the hydrogen-recombination temperature
     const Tcool = p.TBreakout * Math.pow(Math.max(te, p.tBoDur) / p.tBoDur, -0.5);
-    s.Tcolor = clamp(Tcool, te > tRecede ? 3500 : 5200, p.TBreakout);
+    const Tfloor = 5200 - (5200 - 3500) * smoothstep(tRecede, tRecede * 1.5, te); // recombination floor relaxes after the plateau
+    const Tflash = clamp(Tcool, Tfloor, p.TBreakout);
+    s.Tcolor = p.Tstar + (Tflash - p.Tstar) * smoothstep(0, p.tBoDur * 0.35, te); // heats up from the surface temperature as the flash rises
   } else {
     s.Tcolor = p.Tstar;
   }
-  s.remnantVisible = s.remnantVisible && s.ejectaVisible ? true : s.remnantVisible;
+  if (!p.hasCollapse) s.remnantVisible = s.ejectaVisible; // total disruption: the card appears once the ejecta are released
 
   // ---- Phase label ----
   s.phase = phaseAt(p, t);
@@ -386,7 +408,7 @@ function buildTimeline(p) {
     add(T_INFALL, 'Core collapse begins', 'The inner core falls inward at up to a quarter of the speed of light.');
     add(T_BOUNCE, 'Core bounce at nuclear density', 'The core stiffens at ~3×10¹⁴ g/cm³ and rebounds, launching a shock.');
     add(T_SHOCK_STALL, 'Shock forms and stalls', 'Photodisintegration of infalling iron drains the shock energy.');
-    add(T_SHOCK_REVIVAL, 'Neutrino heating revives the shock', 'A fraction of the 10⁵³ erg neutrino burst is absorbed behind the shock.');
+    add(T_SHOCK_REVIVAL, 'Neutrino heating revives the shock', 'A fraction of the ~3×10⁵³ erg neutrino burst is absorbed behind the shock.');
     add(10, 'Neutrino burst complete', `~${(p.Eneutrino / 1e-7).toExponential(1)} erg carried away by neutrinos.`);
     if (p.remnant.type === 'black-hole') add(5, 'Proto-neutron star collapses into a black hole', 'Fallback pushes the core past the maximum neutron-star mass.');
     else add(2, 'Proto-neutron star forms', `A ${p.remnant.mass.toFixed(2)} M☉ neutron star begins to cool.`);
@@ -398,7 +420,7 @@ function buildTimeline(p) {
     add(0, 'Detonation wave launched', 'The burning front races outward through the star.');
   }
   if (bo > 60) add(bo * 0.5, 'Shock halfway through the envelope', 'The surface still shows no sign of what has happened deep inside.');
-  add(bo, 'Shock breakout — first light', `The shock reaches the surface: a ${(p.TBreakout / 1e3).toFixed(0)},000 K flash lasting ~${Math.round(p.tBoDur / 60)} min.`);
+  add(bo, 'Shock breakout — first light', `The shock reaches the surface: a ${(Math.round(p.TBreakout / 1e3) * 1e3).toLocaleString('en-US')} K flash lasting ~${fmtDuration(p.tBoDur, 0)}.`);
   add(bo + p.tBoDur * 4, 'Breakout flash fades', 'The outer layers cool and expand at thousands of km/s.');
   if (p.LPlateau > 0) {
     add(bo + p.tRise * 2, 'Approaching peak brightness', 'The expanding photosphere grows while cooling toward 6,000 K.');

@@ -4,15 +4,20 @@ import {
 } from './constants.js';
 
 const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+const rnd = (x, d) => Number(x.toFixed(d)); // value as displayed, so unit choice survives rounding
 const sup = (n) => String(n).split('').map((c) => SUP[c] ?? c).join('');
 
 /** Scientific notation with unicode superscripts: 1.23×10⁴⁴ */
 export function sci(v, digits = 2) {
   if (!isFinite(v)) return '—';
   if (v === 0) return '0';
-  const e = Math.floor(Math.log10(Math.abs(v)));
-  const m = v / 10 ** e;
-  if (e >= -2 && e < 4) return v.toPrecision(digits + 1).replace(/\.?0+$/, '');
+  let e = Math.floor(Math.log10(Math.abs(v)));
+  let m = v / 10 ** e;
+  if (Math.abs(+m.toFixed(digits)) >= 10) { m /= 10; e += 1; } // mantissa rounded up to 10
+  if (e >= -2 && e < 4) {
+    const s = v.toFixed(Math.max(0, digits - e));
+    return s.includes('.') ? s.replace(/\.?0+$/, '') : s; // trim zeros only after a decimal point
+  }
   return `${m.toFixed(digits)}×10${sup(e)}`;
 }
 
@@ -24,7 +29,7 @@ export function compact(v, digits = 2) {
   const units = ['k', 'M', 'G', 'T', 'P', 'E'];
   let i = -1;
   let x = v;
-  while (Math.abs(x) >= 1000 && i < units.length - 1) { x /= 1000; i++; }
+  while (Math.abs(+x.toFixed(digits)) >= 1000 && i < units.length - 1) { x /= 1000; i++; }
   return `${x.toFixed(digits)} ${units[i]}`;
 }
 
@@ -43,9 +48,9 @@ export function fmtDistanceLy(ly) {
 
 export function fmtLengthMeters(m) {
   if (!isFinite(m)) return '—';
-  if (m < 1e3) return `${m.toFixed(0)} m`;
+  if (rnd(m, 0) < 1e3) return `${m.toFixed(0)} m`;
   if (m < 1e7) return `${(m / 1e3).toFixed(0)} km`;
-  if (m < SOLAR_RADIUS_M * 5) return `${compact(m / 1e3, 1)} km`;
+  if (m < SOLAR_RADIUS_M * 5) return `${Math.round(m / 1e3).toLocaleString('en-US')} km`;
   if (m < AU_M * 0.5) return `${(m / SOLAR_RADIUS_M).toFixed(1)} R☉`;
   if (m < LIGHT_YEAR_M * 0.05) return `${(m / AU_M).toFixed(2)} AU`;
   if (m < PARSEC_M * 100) return `${(m / LIGHT_YEAR_M).toFixed(2)} ly`;
@@ -54,8 +59,9 @@ export function fmtLengthMeters(m) {
 
 export function fmtVelocity(mps) {
   if (!isFinite(mps)) return '—';
-  if (mps < 1e3) return `${mps.toFixed(0)} m/s`;
-  return `${compact(mps / 1e3, 1)} km/s`;
+  if (rnd(mps, 0) < 1e3) return `${mps.toFixed(0)} m/s`;
+  const kms = mps / 1e3;
+  return `${kms < 100 ? kms.toFixed(1) : Math.round(kms).toLocaleString('en-US')} km/s`;
 }
 
 export function fmtEnergy(j) {
@@ -68,31 +74,34 @@ export function fmtDuration(s, digits = 1) {
   if (!isFinite(s)) return '—';
   const abs = Math.abs(s);
   const sign = s < 0 ? '−' : '';
-  if (abs < 1e-3) return `${sign}${(abs * 1e6).toFixed(0)} µs`;
-  if (abs < 1) return `${sign}${(abs * 1e3).toFixed(0)} ms`;
-  if (abs < MINUTE_S) return `${sign}${abs.toFixed(digits)} s`;
-  if (abs < HOUR_S) return `${sign}${(abs / MINUTE_S).toFixed(digits)} min`;
-  if (abs < DAY_S) return `${sign}${(abs / HOUR_S).toFixed(digits)} h`;
-  if (abs < YEAR_S) return `${sign}${(abs / DAY_S).toFixed(digits)} d`;
+  if (abs < 1e-3 && rnd(abs * 1e6, 0) < 1e3) return `${sign}${(abs * 1e6).toFixed(0)} µs`;
+  if (abs < 1 && rnd(abs * 1e3, 0) < 1e3) return `${sign}${(abs * 1e3).toFixed(0)} ms`;
+  if (rnd(abs, digits) < 60) return `${sign}${abs.toFixed(digits)} s`;
+  if (rnd(abs / MINUTE_S, digits) < 60) return `${sign}${(abs / MINUTE_S).toFixed(digits)} min`;
+  if (rnd(abs / HOUR_S, digits) < 24) return `${sign}${(abs / HOUR_S).toFixed(digits)} h`;
+  if (abs < YEAR_S && rnd(abs / DAY_S, digits) < YEAR_S / DAY_S) return `${sign}${(abs / DAY_S).toFixed(digits)} d`;
   return `${sign}${fmtYears(abs / YEAR_S)}`;
 }
 
 export function fmtYears(y, digits = 1) {
   if (!isFinite(y)) return '—';
   const abs = Math.abs(y);
-  if (abs < 1e3) return `${abs.toFixed(abs < 10 ? digits : 0)} yr`;
-  if (abs < 1e6) return `${(abs / 1e3).toFixed(digits)} kyr`;
-  if (abs < 1e9) return `${(abs / 1e6).toFixed(digits)} Myr`;
-  if (abs < 1e12) return `${(abs / 1e9).toFixed(digits)} Gyr`;
+  if (rnd(abs, abs < 10 ? digits : 0) < 1e3) return `${abs.toFixed(abs < 10 ? digits : 0)} yr`;
+  if (rnd(abs / 1e3, digits) < 1e3) return `${(abs / 1e3).toFixed(digits)} kyr`;
+  if (rnd(abs / 1e6, digits) < 1e3) return `${(abs / 1e6).toFixed(digits)} Myr`;
+  if (rnd(abs / 1e9, digits) < 1e3) return `${(abs / 1e9).toFixed(digits)} Gyr`;
   return `${sci(abs, 1)} yr`;
 }
+
+/** Span of years for readouts: sub-year spans (the last burning stages last days or hours) read in d/h/min instead of "0.0 yr". */
+export const fmtSpanYears = (y) => (y > 0 && y < 0.05 ? fmtDuration(y * YEAR_S) : fmtYears(y));
 
 /** Timeline stamp used in the event log. */
 export function fmtTimestamp(s) {
   if (s < 0) return `−${fmtDuration(-s)}`;
-  if (s < 60) return `+${s.toFixed(2)} s`;
-  if (s < HOUR_S) return `+${(s / MINUTE_S).toFixed(1)} min`;
-  if (s < DAY_S * 2) return `+${(s / HOUR_S).toFixed(1)} h`;
+  if (rnd(s, 2) < 60) return `+${s.toFixed(2)} s`;
+  if (rnd(s / MINUTE_S, 1) < 60) return `+${(s / MINUTE_S).toFixed(1)} min`;
+  if (rnd(s / HOUR_S, 1) < 48) return `+${(s / HOUR_S).toFixed(1)} h`;
   if (s < YEAR_S) return `+${(s / DAY_S).toFixed(0)} d`;
   return `+${fmtYears(s / YEAR_S)}`;
 }

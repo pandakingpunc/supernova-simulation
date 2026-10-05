@@ -36,12 +36,17 @@ export class CameraRig {
     this.logDist = Math.log(3.4);
     this.lastBase = 3.4;
     camera.position.set(0, 1.3, 3.2);
-    domElement.addEventListener('wheel', (e) => {
+    this.domElement = domElement;
+    this.onWheel = (e) => {
       e.preventDefault();
-      const f = Math.exp(clamp(e.deltaY, -120, 120) * 0.0016);
-      if (this.preset === 'free') this.logDist += Math.log(f);
+      // Normalise line/page-mode wheels (Firefox) to pixels
+      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      const f = Math.exp(clamp(dy, -120, 120) * 0.0016);
+      // Free distance is bounded so near (dist*4e-4) stays well inside the far plane
+      if (this.preset === 'free') this.logDist = clamp(this.logDist + Math.log(f), Math.log(1e-7), Math.log(1e11));
       else this.userZoom = clamp(this.userZoom * f, 0.04, 60);
-    }, { passive: false });
+    };
+    domElement.addEventListener('wheel', this.onWheel, { passive: false });
   }
 
   setPreset(name, snap) {
@@ -117,7 +122,10 @@ export class CameraRig {
     return 2 * this.distance() * Math.tan((this.camera.fov * Math.PI) / 360) * aspect * SOLAR_RADIUS_M;
   }
 
-  dispose() { this.controls.dispose(); }
+  dispose() {
+    this.domElement.removeEventListener('wheel', this.onWheel);
+    this.controls.dispose();
+  }
 }
 
 export { THREE };

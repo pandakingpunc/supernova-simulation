@@ -3,10 +3,10 @@
  * four time-series charts and the Core Monitor cutaway. Values update at
  * ~10 Hz to keep DOM work negligible.
  */
-import { h, dataRow, chip, setChildren } from './dom.js';
+import { h, dataRow, chip, setChildren, append } from './dom.js';
 import { Chart } from './Chart.js';
 import { CoreMonitor } from './CoreMonitor.js';
-import { sci, fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtDensity, fmtDuration, fmtYears, fmtVelocity, fmtEnergy, fmtLengthMeters, fmtDistanceLy } from '../core/units.js';
+import { sci, fmtSolarMass, fmtSolarRadius, fmtSolarLum, fmtKelvin, fmtDensity, fmtDuration, fmtYears, fmtSpanYears, fmtVelocity, fmtEnergy, fmtLengthMeters, fmtDistanceLy } from '../core/units.js';
 import { SOLAR_RADIUS_M, SOLAR_LUMINOSITY_W, YEAR_S } from '../core/constants.js';
 import { REMNANT_INFO, spinPeriodAt } from '../physics/remnants.js';
 
@@ -78,20 +78,20 @@ export function createSciencePanel(ctx) {
       list.push(dataRow('⁵⁶Ni synthesised', fmtSolarMass(p.MNi), 'Estimated'));
       list.push(dataRow('Remnant', `${p.remnant.short} · ${fmtSolarMass(p.remnantMass)}`, 'Estimated'));
     } else {
-      list.push(dataRow('Stellar age', fmtYears(snap.ageYr), snap.phase === 'evolution' && !sim.evolved ? 'Observed' : 'Simulation'));
+      list.push(dataRow('Stellar age', fmtYears(snap.ageYr), snap.phase === 'evolution' && !sim.evolved && star.observed ? 'Observed' : 'Simulation'));
       list.push(dataRow('Radius', fmtSolarRadius(snap.R), tag));
       list.push(dataRow('Luminosity', fmtSolarLum(snap.L), tag));
       list.push(dataRow('Surface temperature', fmtKelvin(snap.T), tag));
       list.push(dataRow('Core temperature', fmtKelvin(snap.Tc), 'Estimated'));
       list.push(dataRow('Core density', fmtDensity(snap.rhoc), 'Estimated'));
-      list.push(dataRow('Mass', fmtSolarMass(snap.mass), star.observed ? 'Observed' : 'Simulation'));
+      list.push(dataRow('Mass', fmtSolarMass(snap.phase === 'ended' && snap.remnant ? snap.remnant.mass : snap.mass), tag));
       if (snap.phase === 'evolution') {
-        list.push(dataRow('Stage duration', fmtYears(snap.stage.durationYr), 'Estimated'));
-        list.push(dataRow('Time to end of life', fmtYears(Math.max(0, snap.track.totalLifetimeYr - (snap.stage.startYr + snap.stage.durationYr * snap.stageProgress))), 'Estimated'));
+        list.push(dataRow('Stage duration', fmtSpanYears(snap.stage.durationYr), 'Estimated'));
+        list.push(dataRow('Time to end of life', fmtSpanYears(Math.max(0, snap.track.totalLifetimeYr - (snap.stage.startYr + snap.stage.durationYr * snap.stageProgress))), 'Estimated'));
       }
       if (snap.nebulaAgeS > 0) list.push(dataRow('Nebula age', fmtDuration(snap.nebulaAgeS), 'Simulation'));
     }
-    list.push(dataRow('Distance from observer', store.state.view === 'earth' ? fmtDistanceLy(star.distanceLy) : fmtLengthMeters(distToObserver), store.state.view === 'earth' ? 'Observed' : 'Simulation'));
+    list.push(dataRow('Distance from observer', store.state.view === 'earth' ? fmtDistanceLy(star.distanceLy) : fmtLengthMeters(distToObserver), store.state.view === 'earth' && star.observed ? 'Observed' : 'Simulation'));
     setChildren(rows, ...list);
 
     // --- charts ---
@@ -116,13 +116,13 @@ export function createSciencePanel(ctx) {
         const extra = [];
         if (r.spinPeriod0) extra.push(dataRow('Spin period (birth)', `${(r.spinPeriod0 * 1e3).toFixed(0)} ms`, 'Estimated'));
         if (r.bField) extra.push(dataRow('Magnetic field', `${sci(r.bField, 0)} G`, 'Estimated'));
-        remnantBox.append(
+        append(remnantBox, [
           h('h3', { class: 'section-title', style: { marginTop: '12px' } }, 'Stellar remnant'),
           h('div', { class: 'phase-banner' }, h('div', {}, h('div', {}, info.name), h('div', { class: 'sub' }, `${r.mass > 0 ? fmtSolarMass(r.mass) + ' · ' : ''}${r.radiusM > 0 ? 'radius ' + fmtLengthMeters(r.radiusM) : 'nothing left behind'}`))),
           h('p', { class: 'note' }, info.description),
           ...extra,
           r.type !== 'none' && r.type !== 'white-dwarf' && r.type !== 'helium-white-dwarf' ? h('p', { class: 'note' }, 'Use the Remnant View camera to inspect it. Rotation is slowed for visibility; real pulsars spin 10–100 times per second.') : null,
-        );
+        ]);
       }
     }
     if (remnantVisible && snap.remnant?.spinPeriod0) {

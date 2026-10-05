@@ -1,5 +1,16 @@
 /** Tiny DOM helpers so the UI code stays declarative without a framework. */
 
+// Chromium reports :focus-visible as soon as any key is pressed on a mouse-focused button, so track the input modality instead:
+// a control focused by a click keeps focus but should not swallow Space (the global pause hotkey) until the user navigates by keyboard.
+let pointerFocus = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', () => { pointerFocus = true; }, true);
+  window.addEventListener('keydown', (e) => {
+    if (['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) pointerFocus = false;
+  }, true);
+}
+export const focusedByPointer = () => pointerFocus;
+
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -69,12 +80,16 @@ export function slider({ label, min, max, step, value, format, onInput, log = fa
   const toVal = (v) => (log ? Math.pow(10, Number(v)) : Number(v));
   const toPos = (v) => (log ? Math.log10(v) : v);
   input.value = toPos(value);
-  const render = () => { out.textContent = format ? format(toVal(input.value)) : String(toVal(input.value)); };
+  // Until the user moves it, report the exact value it was given (initial or setValue): the input snaps it to its step (25 -> 25.12 on a log slider).
+  let exact = value;
+  let touched = false;
+  const current = () => (touched ? toVal(input.value) : exact);
+  const render = () => { out.textContent = format ? format(current()) : String(current()); };
   render();
-  input.addEventListener('input', () => { render(); onInput?.(toVal(input.value)); });
+  input.addEventListener('input', () => { touched = true; render(); onInput?.(current()); });
   const wrap = h('label', { class: 'slider' }, h('span', { class: 'slider-label' }, label, out), input);
-  wrap.setValue = (v) => { input.value = toPos(v); render(); };
-  wrap.getValue = () => toVal(input.value);
+  wrap.setValue = (v) => { input.value = toPos(v); exact = v; touched = false; render(); };
+  wrap.getValue = current;
   return wrap;
 }
 

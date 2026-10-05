@@ -3,7 +3,7 @@
  * loop, keyboard shortcuts, persistence and adaptive quality.
  */
 import { createStore } from '../core/store.js';
-import { loadSettings, saveSettings, saveStar, deleteStar } from '../core/storage.js';
+import { loadSettings, saveSettings, saveStar, deleteStar, MAX_SAVED_STARS } from '../core/storage.js';
 import { Simulation } from '../sim/Simulation.js';
 import { SceneManager } from '../render/SceneManager.js';
 import { EarthView } from '../earth/EarthView.js';
@@ -22,8 +22,10 @@ import { createBottomBar } from './BottomBar.js';
 import { createOverlay } from './Overlay.js';
 import { createComparePanel } from './ComparePanel.js';
 import { createIntro } from './Intro.js';
+import { button, focusedByPointer } from './dom.js';
 import { toast } from './Toast.js';
 import { YEAR_S } from '../core/constants.js';
+import { fmtDuration } from '../core/units.js';
 
 const UI_UPDATE_INTERVAL = 0.1; // s
 const LOW_FPS_THRESHOLD = 26;
@@ -34,7 +36,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
   const store = createStore({
     view: 'close',
     cameraPreset: 'orbit',
-    quality: QUALITY_PRESETS[settings.quality] ? settings.quality : DEFAULT_QUALITY,
+    quality: Object.prototype.hasOwnProperty.call(QUALITY_PRESETS, settings.quality) ? settings.quality : DEFAULT_QUALITY,
     qualityLocked: !!settings.qualityLocked,
     respectLightTravel: settings.respectLightTravel ?? true,
     activeStarId: null,
@@ -55,6 +57,11 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
 
   const persist = () => saveSettings({ quality: store.state.quality, qualityLocked: store.state.qualityLocked, respectLightTravel: store.state.respectLightTravel, introSeen: true });
 
+  // Touch devices have no H key: a small button brings the interface back while it is hidden.
+  const showUiBtn = button('Show interface', () => actions.toggleUI(), 'small primary');
+  Object.assign(showUiBtn.style, { position: 'fixed', top: '10px', right: '10px', zIndex: '30', display: 'none' });
+  document.body.append(showUiBtn);
+
   const actions = {
     loadStar(star) {
       sim.loadStar(star);
@@ -70,10 +77,11 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
       toast('Stellar Evolution Mode: the rest of the star\'s life, compressed to about a minute.');
     },
     triggerSupernova(forced) {
+      if (sim.phase === 'supernova') return;
       const scenario = sim.triggerSupernova({ forced });
-      if (!scenario) { toast('This star cannot explode naturally. Use "Trigger Experimental Supernova".', 'warn'); return; }
+      if (!scenario) { if (!forced) toast('This star cannot explode naturally. Use "Trigger Experimental Supernova".', { kind: 'warn' }); return; }
       const label = sim.model.params.label;
-      toast(sim.forced ? `Experimental scenario: ${label}. Not an astronomical prediction.` : `${label} — core collapse begins.`, sim.forced ? 'warn' : 'info');
+      toast(sim.forced ? `Experimental scenario: ${label}. Not an astronomical prediction.` : `${label} — core collapse begins.`, { kind: sim.forced ? 'warn' : 'info' });
       if (store.state.view === 'compare') actions.setView('close');
     },
     resetStar() {
@@ -91,7 +99,7 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
       scene.setCameraPreset(name, sim.snapshot());
     },
     setQuality(name, locked = false) {
-      if (!QUALITY_PRESETS[name]) return;
+      if (!Object.prototype.hasOwnProperty.call(QUALITY_PRESETS, name)) return;
       scene.setQuality(name);
       store.set({ quality: name, qualityLocked: locked || store.state.qualityLocked });
       persist();
@@ -100,27 +108,33 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
     jumpToLightArrival() {
       if (sim.phase !== 'supernova') return;
       // Restart the log clock from the moment of arrival so Earth watches the explosion unfold.
-      sim.cinematicOrigin = sim.lightDelaySeconds();
-      sim.seek(sim.cinematicOrigin - 3); // 3 s of the old star, then Earth sees the collapse unfold
+      const origin = sim.lightDelaySeconds();
+      sim.seek(origin - 3); // 3 s of the old star, then Earth sees the collapse unfold
+      sim.cinematicOrigin = origin; // after seek(), which resets it
       sim.setTimeMode('cinematic');
-      toast(`Jumped ${(sim.star.distanceLy).toFixed(0)} years ahead: the light has just reached Earth. Near the star, the remnant is already that old.`);
+      toast(`Jumped ${fmtDuration(origin)} ahead: the light has just reached Earth. Near the star, the remnant is already that old.`);
     },
     seek(t) { sim.seek(t); if (sim.timeMode === 'pause') sim.setTimeMode('cinematic'); },
     seekStage(i) { sim.seekStage(i); },
     saveCustomStar(star) {
-      saveStar(star);
+      const r = saveStar(star);
+      if (!r.ok) { toast(`Could not save ${star.name}: browser storage is blocked or full.`, { kind: 'warn' }); return; }
       store.set({ savedStarsVersion: store.state.savedStarsVersion + 1 });
-      toast(`${star.name} saved to your library (stored locally in this browser).`);
+      toast(r.evicted
+        ? `${star.name} saved (your oldest preset was removed: the limit is ${MAX_SAVED_STARS}).`
+        : `${star.name} saved to your library (stored locally in this browser).`);
     },
     deleteSavedStar(id) {
-      deleteStar(id);
+      const r = deleteStar(id);
+      if (!r.ok) { toast('Could not update saved stars: browser storage is blocked or full.', { kind: 'warn' }); return; }
       store.set({ savedStarsVersion: store.state.savedStarsVersion + 1 });
     },
     toggleUI() {
       const hidden = !store.state.uiHidden;
       store.set({ uiHidden: hidden });
       document.body.classList.toggle('ui-hidden', hidden);
-      if (hidden) toast('Interface hidden — press H to bring it back', { duration: 2500 });
+      showUiBtn.style.display = hidden ? '' : 'none';
+      if (hidden) toast('Interface hidden — press H or tap "Show interface" to bring it back', { duration: 2500 });
     },
     showIntro() { document.body.append(createIntro()); },
     toast(msg, kind = 'info') { toast(msg, { kind }); },
@@ -161,17 +175,20 @@ export function createApp({ sceneCanvas, earthCanvas, uiRoot }) {
 
   // ---- keyboard ----
   window.addEventListener('keydown', (e) => {
-    if (e.target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    const intro = document.querySelector('.intro');
+    if (e.key === 'Escape') { if (intro) { intro.remove(); persist(); } return; }
+    if (intro) return; // hotkeys stay inactive behind the intro modal
+    if (e.target && (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const presets = ['orbit', 'surface', 'wide', 'front', 'remnant'];
     if (e.code === 'Space') {
+      if (!focusedByPointer() && e.target?.closest?.('button, a, [role=button]')) return; // a keyboard-focused control handles its own activation; a mouse-clicked one keeps focus but should not swallow Space
       e.preventDefault();
-      if (sim.timeMode === 'pause') sim.setTimeMode(sim.phase === 'supernova' ? 'cinematic' : sim.lastPlayMode ?? 'evolution');
-      else { sim.lastPlayMode = sim.timeMode; sim.setTimeMode('pause'); }
+      sim.setTimeMode(sim.timeMode === 'pause' ? sim.resumeMode() : 'pause');
     } else if (e.key >= '1' && e.key <= '5') actions.setCameraPreset(presets[+e.key - 1]);
     else if (e.key === 'h' || e.key === 'H') actions.toggleUI();
     else if (e.key === 'e' || e.key === 'E') actions.setView('earth');
     else if (e.key === 'c' || e.key === 'C') actions.setView('close');
-    else if (e.key === 'Escape') document.querySelector('.intro')?.remove();
   });
 
   // ---- sizing ----

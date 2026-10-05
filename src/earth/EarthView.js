@@ -9,7 +9,7 @@
  * follow from that one number, which keeps the scene physically coherent.
  */
 import { BRIGHT_STARS, CATALOG_TO_BRIGHT } from '../data/brightStars.js';
-import { sunRaDec, localSiderealTime, altAz, moonApprox, nextRise, hourLabel, dateLabel, dayOfYear } from '../physics/skyMath.js';
+import { sunRaDec, localSiderealTime, altAz, moonApprox, nextRise, hourLabel, dateLabel, dayOfYear, daysInYear } from '../physics/skyMath.js';
 import { apparentMagnitudes, illuminanceLux, brightnessComparison } from '../physics/earthEffects.js';
 import { blackbodyRGB } from '../physics/blackbody.js';
 import { makeRng, clamp, lerp, smoothstep, DEG } from '../core/math.js';
@@ -58,7 +58,7 @@ function generateMilkyWay() {
 
 function horizonProfile(azDeg) {
   const a = azDeg * DEG;
-  return 1.6 + 1.1 * Math.sin(a * 3 + 0.4) + 0.7 * Math.sin(a * 7.3 + 2.1) + 0.45 * Math.sin(a * 17 + 1.3) + 0.3 * Math.sin(a * 41 + 0.7);
+  return 1.6 + 1.1 * Math.sin(a * 3 + 0.4) + 0.7 * Math.sin(a * 7 + 2.1) + 0.45 * Math.sin(a * 17 + 1.3) + 0.3 * Math.sin(a * 41 + 0.7);
 }
 
 export class EarthView {
@@ -67,6 +67,7 @@ export class EarthView {
     this.ctx = canvas.getContext('2d');
     this.state = {
       latitude: 41,
+      year: new Date().getFullYear(),
       dayOfYear: dayOfYear(),
       hour: 22,
       autoAdvance: false,
@@ -100,7 +101,8 @@ export class EarthView {
     c.addEventListener('pointercancel', stop);
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.state.fovDeg = clamp(this.state.fovDeg * Math.exp(e.deltaY * 0.001), 45, 160);
+      const dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1); // line/page wheels (Firefox) -> pixels
+      this.state.fovDeg = clamp(this.state.fovDeg * Math.exp(dy * 0.001), 45, 160);
     }, { passive: false });
   }
 
@@ -119,11 +121,12 @@ export class EarthView {
     this.state.lookAlt = clamp(this.info.starAlt - 8, -8, 75);
   }
 
-  /** Advance the local clock until the star is above the horizon. */
+  /** Advance the local clock until the star is above the horizon. Returns true, false (never rises) or 'up' (already above). */
   jumpToStarRise() {
+    if (this.info.starUp) return 'up';
     const r = this.info.riseHour;
     if (r == null) return false;
-    if (r < this.state.hour) this.state.dayOfYear = (this.state.dayOfYear % 365) + 1;
+    if (r < this.state.hour) this.state.dayOfYear = (this.state.dayOfYear % daysInYear(this.state.year)) + 1;
     this.state.hour = r;
     return true;
   }
@@ -142,15 +145,16 @@ export class EarthView {
     const H = this.height;
     if (s.autoAdvance) {
       s.hour += dt * s.hoursPerSecond;
-      if (s.hour >= 24) { s.hour -= 24; s.dayOfYear = (s.dayOfYear % 365) + 1; }
+      if (s.hour >= 24) { s.hour -= 24; s.dayOfYear = (s.dayOfYear % daysInYear(s.year)) + 1; }
     }
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     // --- positions ---
     const lst = localSiderealTime(s.dayOfYear, s.hour);
-    const sunEq = sunRaDec(s.dayOfYear);
+    const tDay = s.dayOfYear + (s.hour - 12) / 24; // fractional day so the Sun and Moon move continuously
+    const sunEq = sunRaDec(tDay);
     const sun = altAz(sunEq.raH, sunEq.decDeg, lst, s.latitude);
-    const moon = moonApprox(s.dayOfYear);
+    const moon = moonApprox(tDay, s.year);
     const moonPos = altAz(moon.raH, moon.decDeg, lst, s.latitude);
     const star = earthSnap?.star;
     const isSun = !!star?.isSun;
@@ -164,7 +168,8 @@ export class EarthView {
       rgb = blackbodyRGB(Tcol);
     }
     const starUp = starPos && starPos.alt > horizonProfile(starPos.az);
-    const snLux = starUp && mV != null ? illuminanceLux(mV) : 0;
+    const sunIsStar = isSun && !earthSnap.sn; // the plain Sun: lit and drawn by the Sun terms, not as a "star"
+    const snLux = starUp && mV != null && !sunIsStar ? illuminanceLux(mV) : 0;
     const sunLevel = smoothstep(-18, -6, sun.alt) * 0.08 + smoothstep(-6, 8, sun.alt) * 0.92;
     const sunUp = sun.alt > -0.8 && !(isSun && earthSnap.sn); // the Sun disc, unless it *is* the supernova
     const snLevel = clamp((Math.log10(snLux + 1e-6) + 1) / 6, 0, 1);
@@ -269,7 +274,9 @@ export class EarthView {
       ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.clip();
       ctx.fillStyle = dark;
       ctx.fillRect(x - R, y - R, 2 * R, 2 * R);
-      const side = moon.waxing ? 1 : -1; // waxing Moon is lit on the western (right-hand) side
+      // the lit limb faces the Sun on screen (which side that is depends on hemisphere and look direction)
+      const dAzSun = ((sun.az - moonPos.az + 540) % 360) - 180;
+      const side = Math.abs(dAzSun) > 150 ? (moon.waxing ? 1 : -1) : (dAzSun >= 0 ? 1 : -1); // near full, the lit ellipse fills the disc
       ctx.fillStyle = lit;
       ctx.fillRect(side > 0 ? x : x - R, y - R, R, 2 * R);
       const ew = Math.abs(Math.cos(moon.elongation)) * R;
@@ -287,7 +294,7 @@ export class EarthView {
     if (star && starPos) {
       const [x, y, pxPerDeg] = this.project(starPos.az, starPos.alt);
       if (starUp) {
-        if (mV <= mLim + 1.5) {
+        if (!sunIsStar && mV <= mLim + 1.5) {
           const bright = -4 - mV; // >0 once brighter than Venus
           const core = bright > 0 ? 3 + bright * 0.45 : Math.max(1, 1 + (mLim - mV) * 0.35);
           const glowR = bright > 0 ? 10 + bright * 14 : core * 3;
@@ -353,10 +360,10 @@ export class EarthView {
     }
 
     this.info = {
-      mV, lux: snLux, mLim, skyLevel, starAlt: starPos?.alt, starAz: starPos?.az, starUp,
+      mV, lux: mV != null ? illuminanceLux(mV) : null, mLim, skyLevel, starAlt: starPos?.alt, starAz: starPos?.az, starUp,
       sunAlt: sun.alt, moon, moonUp: moonPos.alt > 0, riseHour, isSun,
       comparison: mV != null ? brightnessComparison(mV) : null,
-      timeLabel: `${dateLabel(s.dayOfYear)} ${hourLabel(s.hour)}`,
+      timeLabel: `${dateLabel(s.dayOfYear, s.year)} ${hourLabel(s.hour)}`,
       Tcol,
     };
     return this.info;

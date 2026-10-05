@@ -80,7 +80,9 @@ export class SceneManager {
     this.renderer.setSize(w, h, false);
     this.composer.setPixelRatio(this.pixelRatio);
     this.composer.setSize(w, h);
-    this.bloomPass.resolution.set(Math.round(w * this.quality.bloomScale), Math.round(h * this.quality.bloomScale));
+    // UnrealBloomPass.setSize halves its input, so bloomScale 1 = full-res bloom
+    const bs = this.quality.bloomScale * 2;
+    this.bloomPass.setSize(Math.round(w * this.pixelRatio * bs), Math.round(h * this.pixelRatio * bs));
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.width = w;
@@ -107,8 +109,9 @@ export class SceneManager {
     this.bloomPass.strength = 0.5 + 1.4 * flash;
     this.starfield.setBrightness(clamp(1 - flash * 0.8, 0.2, 1));
 
-    if (this.quality.bloom) this.composer.render();
-    else this.renderer.render(this.scene, this.camera);
+    // Always go through the composer so OutputPass (tone mapping + sRGB) runs on every preset;
+    // bloomPass.enabled skips the bloom itself on Low
+    this.composer.render();
 
     // FPS meter (1 s window)
     this.fpsAcc += dt;
@@ -129,6 +132,7 @@ export class SceneManager {
     this.star.dispose();
     this.ejecta.dispose();
     this.shock.dispose();
+    this.remnant.dispose();
     this.starfield.dispose();
     this.composer.dispose();
     this.renderer.dispose();

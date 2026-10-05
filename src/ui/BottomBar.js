@@ -13,7 +13,8 @@ export function createBottomBar(ctx) {
   const small = h('div', { class: 'small' });
   const rate = h('div', { class: 'rate' });
   const clock = h('div', { class: 'clock' }, big, small, rate);
-  const triggerBtn = button('Trigger Supernova', () => actions.triggerSupernova(false), 'danger');
+  const isNatural = () => !!sim.star && ['core-collapse', 'wr-collapse', 'pisn'].includes(sim.track.terminal);
+  const triggerBtn = button('Trigger Supernova', () => actions.triggerSupernova(!isNatural()), 'danger');
   const resetBtn = button('Reset star', () => actions.resetStar());
   const el = h('div', { class: 'panel bottombar' }, controls, clock, h('div', { class: 'actions' }, triggerBtn, resetBtn));
 
@@ -43,7 +44,7 @@ export function createBottomBar(ctx) {
 
   function update(snap) {
     if (!snap) return;
-    const natural = !!sim.star && ['core-collapse', 'wr-collapse', 'pisn'].includes(sim.track.terminal);
+    const natural = isNatural();
     if (snap.phase === 'supernova') {
       triggerBtn.style.display = 'none';
       big.textContent = fmtDuration(snap.tExp, 2);
@@ -52,9 +53,10 @@ export function createBottomBar(ctx) {
       triggerBtn.style.display = '';
       triggerBtn.textContent = natural ? 'Trigger Supernova' : 'Trigger Experimental Supernova';
       triggerBtn.className = `btn ${natural ? 'danger' : 'warn'}`;
-      triggerBtn.onclick = () => actions.triggerSupernova(!natural);
       big.textContent = fmtYears(snap.ageYr, 2);
-      small.textContent = snap.phase === 'ended' ? `${snap.remnant.name} · nebula age ${fmtDuration(snap.nebulaAgeS)}` : `stellar age · ${snap.stage.name}`;
+      small.textContent = snap.phase === 'ended'
+        ? `${snap.remnant.name} · ${snap.nebulaAgeS > 0 ? `nebula age ${fmtDuration(snap.nebulaAgeS)}` : `age ${fmtDuration(snap.postAgeS)}`}`
+        : `stellar age · ${snap.stage.name}`;
     }
     const r = snap.timeRate;
     rate.textContent = r > 0 ? `time acceleration ≈ ${sci(r, 1)}×` : 'paused';
