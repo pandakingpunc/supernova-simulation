@@ -464,7 +464,7 @@ for (const day of [10, 100, 200, 300]) {
   check(eq.raH > 0 && eq.raH < 24 && Number.isFinite(meanLon), 'sunRaDec(100) invalid');
   check(Math.abs(sunRaDec(80).decDeg) < 1.5, `Sun declination at the March equinox: ${sunRaDec(80).decDeg}`);
 }
-for (const [h, want] of [[13.1666666, '13:10'], [0.15, '00:09'], [12, '12:00'], [24, '00:00'], [23.9999, '23:59'], [23.995, '23:59'], [-0.5, '23:30'], [26.25, '02:15'], [NaN, '--:--'], [Infinity, '--:--']]) {
+for (const [h, want] of [[13.1666666, '13:10'], [0.15, '00:09'], [12, '12:00'], [24, '00:00'], [23.9999, '23:59'], [23.995, '23:59'], [24 - 4e-15, '23:59'], [-0.5, '23:30'], [26.25, '02:15'], [NaN, '--:--'], [Infinity, '--:--']]) {
   check(hourLabel(h) === want, `hourLabel(${h}) = '${hourLabel(h)}', expected '${want}'`);
 }
 

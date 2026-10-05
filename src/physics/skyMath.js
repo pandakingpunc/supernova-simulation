@@ -101,7 +101,10 @@ export function dateLabel(dayOfYear, year = new Date().getFullYear()) {
 export function hourLabel(h) {
   if (!Number.isFinite(h)) return '--:--';
   // whole minutes (floored, with a sub-second tolerance for float noise, so 13.1666 h reads 13:10) and never 24:00, so the clock only reads 00:00 when the date label has rolled over
-  const total = Math.min(Math.floor((((h % 24) + 24) % 24) * 60 + 1e-3), 1439);
+  let hod = h % 24;
+  if (hod < 0) hod += 24;
+  if (hod >= 24) hod = 24 - 1e-9; // -1e-15 + 24 rounds to exactly 24, which would read 00:00 under the previous day's date
+  const total = Math.min(Math.floor(hod * 60 + 1e-3), 1439);
   const hh = Math.floor(total / 60);
   const mm = total % 60;
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
