@@ -12,7 +12,7 @@
  * of wall-clock seconds. That is what makes a 0.25 s collapse and a
  * 100-day plateau both watchable in one sitting.
  */
-import { buildEvolutionTrack, applyObservedState, stateAtStage, stageForAge } from '../physics/evolution.js';
+import { buildEvolutionTrack, applyObservedState, stateAtStage } from '../physics/evolution.js';
 import { buildSupernovaModel, determineScenario } from '../physics/supernovaModel.js';
 import { predictRemnant } from '../physics/remnants.js';
 import { blackbodyRGB } from '../physics/blackbody.js';
@@ -72,6 +72,7 @@ export class Simulation {
     const pos = applyObservedState(this.track, star);
     this.stageIndex = pos.stageIndex;
     this.stageProgress = pos.progress;
+    this.progressComp = 0;
     this.trackAgeAtLoad = this.track.stages[pos.stageIndex].startYr + this.track.stages[pos.stageIndex].durationYr * pos.progress;
     this.ageOffsetYr = star.ageYr - this.trackAgeAtLoad;
     this.phase = 'evolution';
@@ -153,6 +154,7 @@ export class Simulation {
     this.phase = 'evolution';
     this.stageIndex = clamp(index, 0, this.track.stages.length - 1);
     this.stageProgress = 0;
+    this.progressComp = 0;
     const reanchored = this.ageOffsetYr !== 0;
     this.ageOffsetYr = 0; // re-anchor the age to the track so an earlier stage never reads a negative age
     this.evolved = true;
@@ -180,6 +182,7 @@ export class Simulation {
     const stage = this.track.stages[this.stageIndex];
     if (this.timeMode === 'evolution') {
       const before = this.stageIndex;
+      this.progressComp = 0;
       this.stageProgress += (dt / stage.displaySec) * this.speed;
       this.timeRate = (stage.durationYr * YEAR_S) / stage.displaySec * this.speed;
       this.evolved = true;
@@ -196,18 +199,30 @@ export class Simulation {
       }
       if (before !== this.stageIndex) this.emit('stage', this.stageIndex);
     } else if (mode.rate > 0) {
-      const trackAge = stage.startYr + stage.durationYr * this.stageProgress + (dt * mode.rate) / YEAR_S;
-      const pos = stageForAge(this.track, trackAge);
-      if (pos.stageIndex !== this.stageIndex) {
-        this.stageIndex = pos.stageIndex;
-        const s = this.track.stages[this.stageIndex];
-        this.eventLog.push({ ageYr: this.currentAgeYr(), key: s.key, title: s.name, detail: s.fusion, stageIndex: this.stageIndex });
-        this.emit('stage', this.stageIndex);
-      }
-      this.stageProgress = pos.progress;
+      // Accumulate stage-local progress (compensated sum): recomputing an absolute age (~1e10 yr)
+      // would lose per-frame increments of a few seconds to float precision.
+      const before = this.stageIndex;
+      const y = (dt * mode.rate) / YEAR_S / stage.durationYr - this.progressComp;
+      const sum = this.stageProgress + y;
+      this.progressComp = (sum - this.stageProgress) - y;
+      this.stageProgress = sum;
       this.timeRate = mode.rate;
       if (mode.rate > 1) this.evolved = true;
-      if (trackAge >= this.track.totalLifetimeYr) this.finishEvolution();
+      while (this.stageProgress >= 1) {
+        if (this.stageIndex >= this.track.stages.length - 1) {
+          this.stageProgress = 1;
+          if (before !== this.stageIndex) this.emit('stage', this.stageIndex);
+          this.finishEvolution();
+          return;
+        }
+        const carryYr = (this.stageProgress - 1) * this.track.stages[this.stageIndex].durationYr;
+        this.stageIndex++;
+        const s = this.track.stages[this.stageIndex];
+        this.stageProgress = carryYr / s.durationYr;
+        this.progressComp = 0;
+        this.eventLog.push({ ageYr: this.currentAgeYr(), key: s.key, title: s.name, detail: s.fusion, stageIndex: this.stageIndex });
+      }
+      if (before !== this.stageIndex) this.emit('stage', this.stageIndex);
     } else {
       this.timeRate = 0;
     }
