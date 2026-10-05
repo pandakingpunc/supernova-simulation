@@ -291,8 +291,13 @@ function stateAt(model, t) {
   } else {
     // Thermonuclear / pair instability: no compact core; a detonation wave sweeps the star.
     if (t < 0) s.instability = clamp(1 + t / (HOUR_S * 2), 0, 1) * 0.6;
-    else { s.coreT = t < 3 ? 6e9 : 1e9; s.coreRho = t < 3 ? 2e9 : 1e6; s.coreInstability = t < 3 ? 1 : 0; }
-    s.coreR = t < 3 ? 5e6 : 0;
+    else {
+      const f = smoothstep(3, 6, t); // the burnt-out core relaxes over a few seconds instead of stepping at t = 3 s
+      s.coreT = 6e9 * Math.pow(1e9 / 6e9, f);
+      s.coreRho = 2e9 * Math.pow(1e6 / 2e9, f);
+      s.coreInstability = 1 - f;
+    }
+    s.coreR = 5e6 * (1 - smoothstep(3, 6, Math.max(t, 0)));
   }
 
   // ---- Shock / ejecta ----

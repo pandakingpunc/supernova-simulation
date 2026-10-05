@@ -180,6 +180,14 @@ for (const star of progenitors) {
   check(!/1000,000/.test(boEvent.detail), `${tag}: malformed temperature in '${boEvent.detail}'`);
   // total disruption: remnant card appears with the ejecta
   if (!p.hasCollapse) check(m.stateAt(p.tBreakout + 1e3).remnantVisible === true, `${tag}: remnantVisible not set for total disruption`);
+  // total disruption: the core readouts relax smoothly instead of stepping at t = 3 s
+  if (!p.hasCollapse) {
+    for (const t of [3, 4.5, 6]) {
+      const a = m.stateAt(t - 1e-6), b = m.stateAt(t + 1e-6);
+      for (const k of ['coreT', 'coreRho']) check(ratioOk(a[k], b[k], 0.01), `${tag}: ${k} steps at t=${t} s (${a[k]} -> ${b[k]})`);
+      check(Math.abs(a.coreInstability - b.coreInstability) < 0.01 && Math.abs(a.coreR - b.coreR) < 1e4, `${tag}: core instability/radius steps at t=${t} s`);
+    }
+  }
   // core collapse: continuous core state across bounce, and surface instability not reusing core instability
   if (p.hasCollapse) {
     const a = m.stateAt(0.25 - 1e-7);
