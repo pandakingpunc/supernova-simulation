@@ -132,8 +132,8 @@ for (const star of progenitors) {
   const tag = star.id;
   // luminosity and colour continuous across shock breakout (no fall to ~0, no temperature jump)
   const bo = [m.stateAt(p.tBreakout - 1e-6), m.stateAt(p.tBreakout + 1e-6)];
-  // (the compact-object term pulsarLum switches on at breakout by design; it is excluded here)
-  check(ratioOk(bo[0].L, bo[1].L - p.pulsarLum, 0.05), `${tag}: L jumps at shock breakout (${bo[0].L} -> ${bo[1].L})`);
+  // (the compact-object term pulsarLum is smoothstepped in with the breakout flash, so L is continuous as is)
+  check(ratioOk(bo[0].L, bo[1].L, 0.05), `${tag}: L jumps at shock breakout (${bo[0].L} -> ${bo[1].L})`);
   check(ratioOk(bo[0].Tcolor, bo[1].Tcolor, 0.01), `${tag}: Tcolor jumps at shock breakout (${bo[0].Tcolor} -> ${bo[1].Tcolor})`);
   check(m.stateAt(p.tBreakout * 0.999).L > 0.5 * p.Lstar, `${tag}: L collapses before breakout`);
   // after the flash: no step in L, colour temperature, shock radius or shock velocity (incl. plateau end and Sedov transition)
