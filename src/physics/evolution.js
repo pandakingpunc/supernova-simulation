@@ -105,7 +105,7 @@ export function buildEvolutionTrack(star) {
     const isWR = M >= WOLF_RAYET_MASS;
     const isPISN = M >= PISN_MIN_MASS && M <= PISN_MAX_MASS && zRel < 0.3;
     const Tc0 = 3.5e7 * Math.pow(M / 15, 0.1);
-    const Lpost = Lms * (M > 25 ? 2 : 3);
+    const Lpost = Lms * lerp(3, 2, clamp((M - 8) / 32, 0, 1)); // continuous in mass (no step at 25 M☉)
     stages.push(stage('ms', 'Main sequence', 'H → He (core, CNO cycle)',
       'Hydrogen burns through the CNO cycle in a large convective core. Even at this stage the star is tens of thousands of times more luminous than the Sun.',
       tauMS, 9,
