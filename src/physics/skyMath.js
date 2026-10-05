@@ -55,9 +55,13 @@ export function altAz(raH, decDeg, lstH, latDeg) {
   return { alt: Math.asin(Math.max(-1, Math.min(1, zUp))) / DEG, az: ((Math.atan2(yE, xN) / DEG) + 360) % 360 };
 }
 
-/** Crude Moon: position along the ecliptic from its age, phase from elongation. */
+/**
+ * Crude Moon: position along the ecliptic from its age, phase from elongation.
+ * Same time convention as the Sun: a whole `dayOfYear` is local solar noon, and the app has no
+ * longitude, so the clock time is taken as UT (day N at 12:00 = noon UT = Jan 1 + (N - 0.5) days).
+ */
 export function moonApprox(dayOfYear, year = new Date().getFullYear()) {
-  const sinceEpoch = (Date.UTC(year, 0, 1) + (dayOfYear - 1) * DAY_MS - NEW_MOON_EPOCH_MS) / DAY_MS;
+  const sinceEpoch = (Date.UTC(year, 0, 1) + (dayOfYear - 0.5) * DAY_MS - NEW_MOON_EPOCH_MS) / DAY_MS;
   const age = ((sinceEpoch % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
   const elongation = (age / SYNODIC_MONTH) * Math.PI * 2; // 0 new, π full
   const lambda = sunEclipticLongitude(dayOfYear) + elongation;
@@ -96,7 +100,8 @@ export function dateLabel(dayOfYear, year = new Date().getFullYear()) {
 
 export function hourLabel(h) {
   if (!Number.isFinite(h)) return '--:--';
-  const total = Math.round((((h % 24) + 24) % 24) * 60) % 1440; // whole minutes, so 13.1666 h reads 13:10
+  // whole minutes (floored, with a sub-second tolerance for float noise, so 13.1666 h reads 13:10) and never 24:00, so the clock only reads 00:00 when the date label has rolled over
+  const total = Math.min(Math.floor((((h % 24) + 24) % 24) * 60 + 1e-3), 1439);
   const hh = Math.floor(total / 60);
   const mm = total % 60;
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
