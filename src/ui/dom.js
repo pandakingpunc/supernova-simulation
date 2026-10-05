@@ -80,15 +80,15 @@ export function slider({ label, min, max, step, value, format, onInput, log = fa
   const toVal = (v) => (log ? Math.pow(10, Number(v)) : Number(v));
   const toPos = (v) => (log ? Math.log10(v) : v);
   input.value = toPos(value);
-  // Until the user moves it, report the exact initial value: the input snaps it to its step (25 -> 25.12 on a log slider).
-  const exact = value;
+  // Until the user moves it, report the exact value it was given (initial or setValue): the input snaps it to its step (25 -> 25.12 on a log slider).
+  let exact = value;
   let touched = false;
   const current = () => (touched ? toVal(input.value) : exact);
   const render = () => { out.textContent = format ? format(current()) : String(current()); };
   render();
   input.addEventListener('input', () => { touched = true; render(); onInput?.(current()); });
   const wrap = h('label', { class: 'slider' }, h('span', { class: 'slider-label' }, label, out), input);
-  wrap.setValue = (v) => { input.value = toPos(v); touched = true; render(); };
+  wrap.setValue = (v) => { input.value = toPos(v); exact = v; touched = false; render(); };
   wrap.getValue = current;
   return wrap;
 }
