@@ -155,6 +155,10 @@ function linTicks(min, max, count = 4) {
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw;
   const out = [];
-  for (let t = Math.ceil(min / step) * step; t <= max; t += step) out.push(t);
+  // when step is below the float spacing at min, `t += step` never advances: stop there
+  for (let t = Math.ceil(min / step) * step; t <= max && out.length < 12; t += step) {
+    out.push(t);
+    if (t + step === t) break;
+  }
   return out;
 }
